@@ -8,18 +8,171 @@ import {
   Heart, Sun, Moon, MapPin, CreditCard, Send, Store, Music, Edit3, Eye,
   BarChart3, TrendingUp, Clock, Truck, Star, Filter, Download, Globe,
   Lock, Palette, Gift, Calendar, Phone, Mail, Hash, DollarSign,
-  AlertTriangle, ChevronRight, ChevronLeft, Image as ImageIcon, RotateCw
+  AlertTriangle, ChevronRight, ChevronLeft, Image as ImageIcon, RotateCw, Upload, FileText
 } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { supabase } from './lib/supabase';
 import './styles.css';
 
-type Product = { id: string; name: string; category: string; price: number; stock: number; image: string; desc: string; featured?: boolean };
+type Product = { id: string; name: string; category: string; price: number; stock: number; image: string; desc: string; featured?: boolean; isStartingFrom?: boolean };
 type CartItem = Product & { qty: number };
 type Design = { occasion: string; type: string; qty: number; color: string; name: string; date: string; extras: string };
 type Coupon = { id: string; code: string; discount: number; type: 'percent' | 'fixed'; maxUsage: number; usageCount: number; minOrder: number; expiry: string; active: boolean };
-type Order = { id: string; order_number: string; customer_name: string; customer_phone: string; customer_email: string; city: string; address: string; occasion: string; notes: string; payment_method: string; subtotal: number; shipping_fee: number; total: number; status: string; created_at: string };
+type Order = {
+  id: string;
+  order_number: string;
+  orderNo?: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  city: string;
+  address: string;
+  occasion: string;
+  notes: string;
+  payment_method: string;
+  subtotal: number;
+  shipping_fee: number;
+  total: number;
+  status: string;
+  payment_status: string;
+  payment_proof?: string;
+  created_at: string;
+};
 type Customer = { name: string; email: string; phone: string; ordersCount: number; totalSpent: number };
+
+const occasions = [
+  'سبوع', 'خطوبة', 'حنة', 'كتب كتاب', 'زفاف',
+  'عيد ميلاد', 'تخرج', 'استقبال مولود', 'رمضان', 'عيد', 'توزيعات شركات'
+];
+
+const translations = {
+  ar: {
+    store: 'المتجر',
+    designStudio: 'صممي توزيعتك',
+    aboutUs: 'من نحن',
+    faq: 'الأسئلة الشائعة',
+    track: 'تتبعي طلبك',
+    login: 'تسجيل الدخول',
+    cart: 'سلة الطلب',
+    browseShop: 'تصفحي المتجر',
+    heroEyebrow: 'HANDCRAFTED • PERSONALIZED • TIMELESS',
+    heroTitle: 'تفاصيل صغيرة…\nتصنع لحظات لا تُنسى.',
+    heroDesc: 'توزيعات وهدايا مصممة بعناية لكل مناسبة، من أول فكرة حتى آخر تفصيلة.',
+    exploreFavors: 'اكتشفي التوزيعات',
+    designYourWay: 'صممي توزيعتك',
+    chooseOccasion: 'اختاري مناسبتك',
+    occasionsSub: 'لكل لحظة طابعها الخاص، ولكل طابع تفاصيله.',
+    curated: 'اختياراتنا المميزة',
+    allCollection: 'شاهدي المجموعة كاملة',
+    bestSellers: 'الأكثر مبيعاً',
+    viewAll: 'شاهدي الكل',
+    stayConnected: 'ابقي على تواصل',
+    subscribeText: 'سجّلي للحصول على أحدث التصاميم والعروض الحصرية مباشرة في بريدك.',
+    subscribeBtn: 'اشتركي',
+    faqTitle: 'الأسئلة الشائعة',
+    letsCreate: 'LET\'S CREATE',
+    transforming: '-transforming moments into memories-',
+    startJourney: 'ابدئي رحلتك',
+    searchPlaceholder: 'ابحثي عن توزيعة…',
+    addToCart: 'أضيفي للسلة',
+    saved: 'محفوظة',
+    save: 'حفظ',
+    productDetails: 'تفاصيل المنتج',
+    checkout: 'إتمام الطلب',
+    orderSummary: 'ملخص الطلب',
+    subtotal: 'المنتجات',
+    shipping: 'الشحن',
+    free: 'مجاني',
+    total: 'الإجمالي',
+    confirmOrder: 'تأكيد الطلب',
+    paymentMethod: 'طريقة الدفع',
+    cod: 'الدفع عند الاستلام',
+    instapay: 'إنستاباي / محفظة إلكترونية',
+    card: 'بطاقة ائتمانية',
+    paymentInstructionsTitle: 'تعليمات الدفع والتحويل',
+    paymentInstructionsText: 'يرجى التحويل عبر إنستاباي أو المحفظة الإلكترونية إلى رقم: 01000000000 ثم رفع صورة الإيصال أدناه.',
+    uploadProof: 'رفع إيصال الدفع',
+    paymentStatus: 'حالة الدفع',
+    statuses: {
+      new: 'طلب جديد',
+      underReview: 'قيد المراجعة',
+      priceConfirmed: 'تم تأكيد السعر',
+      waitingPayment: 'بانتظار الدفع',
+      proofSubmitted: 'تم رفع إيصال الدفع',
+      verified: 'تم التحقق من الدفع',
+      paid: 'مدفوع',
+      preparing: 'قيد التجهيز',
+      production: 'قيد الإنتاج',
+      ready: 'جاهز',
+      shipped: 'تم الشحن',
+      completed: 'مكتمل',
+      cancelled: 'ملغي'
+    }
+  },
+  en: {
+    store: 'Shop',
+    designStudio: 'Custom Studio',
+    aboutUs: 'About Us',
+    faq: 'FAQ',
+    track: 'Track Order',
+    login: 'Login',
+    cart: 'Shopping Bag',
+    browseShop: 'Explore Collection',
+    heroEyebrow: 'HANDCRAFTED • PERSONALIZED • TIMELESS',
+    heroTitle: 'Exquisite details…\nfor unforgettable moments.',
+    heroDesc: 'Thoughtfully crafted custom event favors and gifts for every celebration.',
+    exploreFavors: 'Explore Favors',
+    designYourWay: 'Design Your Favor',
+    chooseOccasion: 'Shop By Occasion',
+    occasionsSub: 'Every moment has its unique character and refined details.',
+    curated: 'Curated Collection',
+    allCollection: 'View Complete Collection',
+    bestSellers: 'Best Sellers',
+    viewAll: 'View All',
+    stayConnected: 'Stay Connected',
+    subscribeText: 'Subscribe to receive the latest designs and exclusive offers in your inbox.',
+    subscribeBtn: 'Subscribe',
+    faqTitle: 'Frequently Asked Questions',
+    letsCreate: 'LET\'S CREATE',
+    transforming: '-transforming moments into memories-',
+    startJourney: 'Begin Journey',
+    searchPlaceholder: 'Search favor…',
+    addToCart: 'Add to Bag',
+    saved: 'Saved',
+    save: 'Save',
+    productDetails: 'Product Details',
+    checkout: 'Checkout',
+    orderSummary: 'Order Summary',
+    subtotal: 'Subtotal',
+    shipping: 'Shipping',
+    free: 'Free',
+    total: 'Total',
+    confirmOrder: 'Confirm Order',
+    paymentMethod: 'Payment Method',
+    cod: 'Cash on Delivery',
+    instapay: 'InstaPay / Mobile Wallet',
+    card: 'Credit Card',
+    paymentInstructionsTitle: 'Payment & Transfer Instructions',
+    paymentInstructionsText: 'Please transfer via InstaPay or Mobile Wallet to: 01000000000 and upload your receipt below.',
+    uploadProof: 'Upload Payment Proof',
+    paymentStatus: 'Payment Status',
+    statuses: {
+      new: 'New Request',
+      underReview: 'Under Review',
+      priceConfirmed: 'Price Confirmed',
+      waitingPayment: 'Waiting for Payment',
+      proofSubmitted: 'Payment Proof Submitted',
+      verified: 'Payment Verified',
+      paid: 'Paid',
+      preparing: 'Preparing',
+      production: 'In Production',
+      ready: 'Ready',
+      shipped: 'Shipped',
+      completed: 'Completed',
+      cancelled: 'Cancelled'
+    }
+  }
+};
 
 const seed: Product[] = [
   { id: 'p1', name: 'توزيعة سبوع الدبدوب الملكي', category: 'سبوع', price: 35, stock: 120, image: '/images/Gemini_Generated_Image_wh7xokwh7xokwh7x.jpeg', desc: 'مجسم دبدوب فاخر مع زجاجة مسك أبيض وكرت ترحيب بالطفل.', featured: true },
@@ -32,9 +185,14 @@ const seed: Product[] = [
   { id: 'p8', name: 'شموع الصويا الطبيعية باللؤلؤ', category: 'كتب كتاب', price: 45, stock: 50, image: '/images/Gemini_Generated_Image_q2ritlq2ritlq2ri.jpeg', desc: 'شمعة صويا معطرة بعبير الياسمين مزينة بحبات لؤلؤ وشريط ساتان.', featured: true },
   { id: 'p9', name: 'مروحة ورقية مذهبة للزفاف', category: 'زفاف', price: 35, stock: 100, image: '/images/Gemini_Generated_Image_w92zqyw92zqyw92z.jpeg', desc: 'مروحة ورقية بتطريز وردي وطباعة أسماء العروسين بماء الذهب.', featured: true },
   { id: 'p10', name: 'بوكس زفاف الورد والذهب', category: 'زفاف', price: 50, stock: 20, image: '/images/Gemini_Generated_Image_ehh0puehh0puehh0.jpeg', desc: 'بوكس هدية كبير بلمسات روز جولد وزهور طبيعية.', featured: true },
+  { id: 'p11', name: 'توزيعات عيد الميلاد بالبالون والكرت', category: 'عيد ميلاد', price: 25, stock: 90, image: '/images/Gemini_Generated_Image_o7uafio7uafio7ua.jpeg', desc: 'شوكولاتة مخصصة مع كرت عيد ميلاد مرح وملون.', featured: true },
+  { id: 'p12', name: 'توزيعات التخرج بقبعة الأكاديمية', category: 'تخرج', price: 32, stock: 75, image: '/images/Gemini_Generated_Image_o2jvt3o2jvt3o2jv.jpeg', desc: 'مجسم قبعة تخرج مع بطاقة تهنئة وخريطة إنجاز.', featured: true },
+  { id: 'p13', name: 'استقبال مولود زهور ولبان دكر', category: 'استقبال مولود', price: 30, stock: 110, image: '/images/Gemini_Generated_Image_pbsa2xpbsa2xpbsa.jpeg', desc: 'توزيعات أنيقة للمستشفى والتهنئة بالمولود الجديد.', featured: true },
+  { id: 'p14', name: 'فانوس رمضان والأذكار الفاخرة', category: 'رمضان', price: 40, stock: 130, image: '/images/Gemini_Generated_Image_i6nilyi6nilyi6ni.jpeg', desc: 'فانوس أكريليك مصغر مع بطاقة أدعية رمضانية.', featured: true },
+  { id: 'p15', name: 'عيدية العيد الفاخرة في مغلف مذهب', category: 'عيد', price: 20, stock: 200, image: '/images/Gemini_Generated_Image_hlt09bhlt09bhlt0.jpeg', desc: 'مغلف عيدية مطبوع بعبارات العيد السعيد وتصميم راقٍ.', featured: true },
+  { id: 'p16', name: 'توزيعات الشركات وهدايا العملاء', category: 'توزيعات شركات', price: 60, stock: 90, image: '/images/Gemini_Generated_Image_etc9loetc9loetc9.jpeg', desc: 'علبة هدايا رسمية بشعار الشركة ومنتجات عطرية فاخرة.', featured: true },
 ];
 
-const occasions = ['سبوع', 'خطوبة', 'حنة', 'كتب كتاب', 'زفاف'];
 const money = (n: number) => `${n.toLocaleString('ar-EG')} ج.م`;
 const getLocal = <T,>(k: string, fallback: T): T => { try { return JSON.parse(localStorage.getItem(k) || 'null') ?? fallback } catch { return fallback } };
 const ease: [number, number, number, number] = [.22, 1, .36, 1];
@@ -147,6 +305,7 @@ function App() {
   const [cart, setCart] = useLocalStorage<CartItem[]>('em-cart', []);
   const [wish, setWish] = useLocalStorage<string[]>('em-wish', []);
   const [dark, setDark] = useState(() => localStorage.getItem('em-dark') === '1');
+  const [lang, setLang] = useLocalStorage<'ar' | 'en'>('em-lang', 'ar');
   const [menu, setMenu] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const location = useLocation();
@@ -155,12 +314,13 @@ function App() {
     localStorage.setItem('em-dark', dark ? '1' : '0');
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   }, [dark]);
-  useEffect(() => { window.scrollTo(0, 0); setMenu(false); }, [location.pathname]);
+
   useEffect(() => {
-    const handler = () => setCartOpen(false);
-    window.addEventListener('popstate', handler);
-    return () => window.removeEventListener('popstate', handler);
-  }, []);
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  }, [lang]);
+
+  useEffect(() => { window.scrollTo(0, 0); setMenu(false); }, [location.pathname]);
 
   const addToCart = useCallback((p: Product) => {
     setCart(c => {
@@ -179,15 +339,19 @@ function App() {
 
   const cartCount = cart.reduce((s, x) => s + x.qty, 0);
   const cartTotal = cart.reduce((s, x) => s + x.price * x.qty, 0);
+  const t = translations[lang];
 
   return (
-    <div className="app">
+    <div className={`app ${lang === 'en' ? 'lang-en' : 'lang-ar'}`}>
       <Header
         cartCount={cartCount}
         menu={menu}
         setMenu={setMenu}
         dark={dark}
         setDark={setDark}
+        lang={lang}
+        setLang={setLang}
+        t={t}
         onCartClick={() => setCartOpen(true)}
       />
 
@@ -198,33 +362,36 @@ function App() {
         changeQty={changeQty}
         remove={removeFromCart}
         total={cartTotal}
+        t={t}
       />
 
       <AnimatePresence mode="wait">
-        <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit">
+        <motion.div key={location.pathname + lang} variants={pageVariants} initial="initial" animate="animate" exit="exit">
           <Routes location={location}>
-            <Route path="/" element={<Home products={products} addToCart={addToCart} wish={wish} setWish={setWish} />} />
-            <Route path="/shop" element={<ShopPage products={products} addToCart={addToCart} wish={wish} setWish={setWish} />} />
-            <Route path="/product/:id" element={<ProductPage products={products} addToCart={addToCart} wish={wish} setWish={setWish} />} />
-            <Route path="/custom" element={<Customizer />} />
-            <Route path="/checkout" element={<CheckoutPage cart={cart} setCart={setCart} cartTotal={cartTotal} />} />
-            <Route path="/track" element={<TrackingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/admin/*" element={<AdminPage />} />
+            <Route path="/" element={<Home products={products} addToCart={addToCart} wish={wish} setWish={setWish} t={t} />} />
+            <Route path="/shop" element={<ShopPage products={products} addToCart={addToCart} wish={wish} setWish={setWish} t={t} />} />
+            <Route path="/product/:id" element={<ProductPage products={products} addToCart={addToCart} wish={wish} setWish={setWish} t={t} />} />
+            <Route path="/custom" element={<Customizer t={t} />} />
+            <Route path="/checkout" element={<CheckoutPage cart={cart} setCart={setCart} cartTotal={cartTotal} t={t} />} />
+            <Route path="/track" element={<TrackingPage t={t} />} />
+            <Route path="/login" element={<LoginPage t={t} />} />
+            <Route path="/admin/*" element={<AdminPage t={t} />} />
           </Routes>
         </motion.div>
       </AnimatePresence>
 
-      <Footer />
+      <Footer t={t} />
     </div>
   );
 }
 
 function Header({
-  cartCount, menu, setMenu, dark, setDark, onCartClick
+  cartCount, menu, setMenu, dark, setDark, lang, setLang, t, onCartClick
 }: {
   cartCount: number; menu: boolean; setMenu: (v: boolean) => void;
-  dark: boolean; setDark: (v: boolean) => void; onCartClick: () => void;
+  dark: boolean; setDark: (v: boolean) => void;
+  lang: 'ar' | 'en'; setLang: (l: 'ar' | 'en') => void;
+  t: typeof translations.ar; onCartClick: () => void;
 }) {
   const scrolled = useScrollShadow();
   return (
@@ -234,7 +401,7 @@ function Header({
       animate={{ y: 0 }}
       transition={{ duration: .6, ease }}
     >
-      <button className="icon mobileOnly" onClick={() => setMenu(!menu)}>
+      <button className="icon mobileOnly" onClick={() => setMenu(!menu)} aria-label="Menu">
         <motion.div whileTap={{ rotate: 90 }} transition={{ duration: .2 }}>
           {menu ? <X size={22} /> : <Menu size={22} />}
         </motion.div>
@@ -248,26 +415,36 @@ function Header({
       </Link>
 
       <nav className={menu ? 'nav open' : 'nav'}>
-        <Link to="/shop" onClick={() => setMenu(false)}>المتجر</Link>
-        <Link to="/custom" onClick={() => setMenu(false)}>صممي</Link>
-        <a href="/#about" onClick={() => setMenu(false)}>من نحن</a>
-        <a href="/#faq" onClick={() => setMenu(false)}>الأسئلة</a>
-        <Link to="/track" onClick={() => setMenu(false)}>تتبعي</Link>
+        <Link to="/shop" onClick={() => setMenu(false)}>{t.store}</Link>
+        <Link to="/custom" onClick={() => setMenu(false)}>{t.designStudio}</Link>
+        <a href="/#about" onClick={() => setMenu(false)}>{t.aboutUs}</a>
+        <a href="/#faq" onClick={() => setMenu(false)}>{t.faq}</a>
+        <Link to="/track" onClick={() => setMenu(false)}>{t.track}</Link>
       </nav>
 
       <div className="headerActions">
+        <motion.button
+          className="langToggleBtn"
+          onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: .95 }}
+          title="Switch Language"
+        >
+          <Globe size={16} /> <span>{lang === 'ar' ? 'EN' : 'العربية'}</span>
+        </motion.button>
+
         <motion.button
           className="icon"
           onClick={() => setDark(!dark)}
           whileHover={{ rotate: 180, scale: 1.1 }}
           whileTap={{ scale: .9 }}
           transition={{ duration: .4 }}
-          aria-label="تبديل الوضع"
+          aria-label="Toggle Theme"
         >
           {dark ? <Sun size={20} /> : <Moon size={20} />}
         </motion.button>
 
-        <motion.button className="icon cartTrigger" onClick={onCartClick} whileHover={{ scale: 1.15 }} whileTap={{ scale: .9 }}>
+        <motion.button className="icon cartTrigger" onClick={onCartClick} whileHover={{ scale: 1.15 }} whileTap={{ scale: .9 }} aria-label="Cart">
           <ShoppingBag size={20} />
           <AnimatePresence>
             {cartCount > 0 && (
@@ -289,11 +466,11 @@ function Header({
 }
 
 function CartDrawer({
-  open, onClose, cart, changeQty, remove, total
+  open, onClose, cart, changeQty, remove, total, t
 }: {
   open: boolean; onClose: () => void; cart: CartItem[];
   changeQty: (id: string, d: number) => void; remove: (id: string) => void;
-  total: number;
+  total: number; t: typeof translations.ar;
 }) {
   const shipping = total >= 500 || !total ? 0 : 25;
   const nav = useNavigate();
@@ -318,7 +495,7 @@ function CartDrawer({
             transition={{ duration: .4, ease }}
           >
             <div className="cartDrawerHead">
-              <h2><ShoppingBag size={20} /> سلة الطلب</h2>
+              <h2><ShoppingBag size={20} /> {t.cart}</h2>
               <motion.button className="icon" onClick={onClose} whileHover={{ rotate: 90 }} whileTap={{ scale: .9 }}>
                 <X size={22} />
               </motion.button>
@@ -330,7 +507,7 @@ function CartDrawer({
                 <h3>السلة فاضية</h3>
                 <p>ابدئي التسوق واكتشفي توزيعاتنا المميزة</p>
                 <motion.button className="btn primary" whileHover={{ y: -2 }} whileTap={{ scale: .96 }} onClick={() => { onClose(); nav('/shop'); }}>
-                  تصفحي المتجر
+                  {t.browseShop}
                 </motion.button>
               </div>
             ) : (
@@ -370,11 +547,11 @@ function CartDrawer({
 
                 <div className="cartDrawerFoot">
                   <div className="cartDrawerSummary">
-                    <div><span>المنتجات</span><b>{money(total)}</b></div>
-                    <div><span>الشحن</span><b className={shipping === 0 ? 'freeShipping' : ''}>{shipping ? money(shipping) : 'مجاني'}</b></div>
+                    <div><span>{t.subtotal}</span><b>{money(total)}</b></div>
+                    <div><span>{t.shipping}</span><b className={shipping === 0 ? 'freeShipping' : ''}>{shipping ? money(shipping) : t.free}</b></div>
                     {total < 500 && total > 0 && <p className="shippingHint">شحن مجاني للطلبات فوق 500 ج.م</p>}
                     <hr />
-                    <div className="cartDrawerGrand"><span>الإجمالي</span><b>{money(total + shipping)}</b></div>
+                    <div className="cartDrawerGrand"><span>{t.total}</span><b>{money(total + shipping)}</b></div>
                   </div>
                   <motion.button
                     className="btn primary full"
@@ -382,7 +559,7 @@ function CartDrawer({
                     whileTap={{ scale: .97 }}
                     onClick={() => { onClose(); nav('/checkout'); }}
                   >
-                    إتمام الطلب <ArrowLeft size={18} />
+                    {t.checkout} <ArrowLeft size={18} />
                   </motion.button>
                 </div>
               </>
@@ -410,7 +587,7 @@ function ProductCard({ p, addToCart, wish, setWish }: { p: Product; addToCart: (
           whileHover={{ scale: 1.2 }}
           whileTap={{ scale: .8 }}
           onClick={e => { e.preventDefault(); setWish(liked ? wish.filter(x => x !== p.id) : [...wish, p.id]); }}
-          aria-label="أضيفي للمفضلة"
+          aria-label="Wishlist"
         >
           <Heart fill={liked ? 'var(--rose)' : 'none'} color={liked ? 'var(--rose)' : 'currentColor'} size={18} />
         </motion.button>
@@ -435,12 +612,12 @@ function ProductCard({ p, addToCart, wish, setWish }: { p: Product; addToCart: (
   );
 }
 
-function Home({ products, addToCart, wish, setWish }: { products: Product[]; addToCart: (p: Product) => void; wish: string[]; setWish: (x: string[]) => void }) {
+function Home({ products, addToCart, wish, setWish, t }: { products: Product[]; addToCart: (p: Product) => void; wish: string[]; setWish: (x: string[]) => void; t: typeof translations.ar }) {
   const faqData = [
     { q: 'كم يستغرق تجهيز الطلب؟', a: 'عادة من 3 إلى 5 أيام عمل، ثم الشحن خلال 24-48 ساعة. الطلبات الكبيرة قد تحتاج وقتاً إضافياً.' },
     { q: 'ما الحد الأدنى للطلب؟', a: 'الحد الأدنى 15 قطعة للتوزيعات المخصصة. للمنتجات الجاهزة لا يوجد حد أدنى.' },
     { q: 'هل يمكن معاينة العينة؟', a: 'نعم، نرسل صور وفيديو للعينة الأولى قبل البدء بالكمية لضمان رضاكِ التام.' },
-    { q: 'ما طرق الدفع المتاحة؟', a: 'البطاقات الائتمانية، فودافون كاش، إنستاباي، والدفع عند الاستلام.' },
+    { q: 'ما طرق الدفع المتاحة؟', a: 'إنستاباي، المحافظ الإلكترونية، والتحويل بعد تأكيد السعر والشحن النهائي.' },
     { q: 'هل الشحن مجاني؟', a: 'نعم، الشحن مجاني للطلبات فوق 500 ج.م. رسوم الشحن الافتراضية 25 ج.م.' }
   ];
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -456,7 +633,7 @@ function Home({ products, addToCart, wish, setWish }: { products: Product[]; add
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: .7, delay: .2, ease }}
           >
-            HANDCRAFTED • PERSONALIZED • TIMELESS
+            {t.heroEyebrow}
           </motion.span>
           <motion.h1
             initial={{ opacity: 0, y: 40 }}
@@ -479,10 +656,10 @@ function Home({ products, addToCart, wish, setWish }: { products: Product[]; add
             transition={{ duration: .6, delay: .8, ease }}
           >
             <motion.div whileHover={{ y: -4 }} whileTap={{ scale: .96 }}>
-              <Link className="btn primary btnLg" to="/shop">اكتشفي التوزيعات <ArrowLeft size={18} /></Link>
+              <Link className="btn primary btnLg" to="/shop">{t.exploreFavors} <ArrowLeft size={18} /></Link>
             </motion.div>
             <motion.div whileHover={{ y: -4 }} whileTap={{ scale: .96 }}>
-              <Link className="btn ghost btnLg" to="/custom">صممي توزيعتك <Sparkles size={18} /></Link>
+              <Link className="btn ghost btnLg" to="/custom">{t.designYourWay} <Sparkles size={18} /></Link>
             </motion.div>
           </motion.div>
           <motion.div
@@ -522,10 +699,10 @@ function Home({ products, addToCart, wish, setWish }: { products: Product[]; add
       <section className="section">
         <div className="sectionHead">
           <AnimateScroll>
-            <div><span className="eyebrow">YOUR OCCASION</span><h2>اختاري مناسبتك</h2></div>
+            <div><span className="eyebrow">YOUR OCCASION</span><h2>{t.chooseOccasion}</h2></div>
           </AnimateScroll>
           <AnimateScroll delay={.1}>
-            <p>لكل لحظة طابعها الخاص، ولكل طابع تفاصيله.</p>
+            <p>{t.occasionsSub}</p>
           </AnimateScroll>
         </div>
         <StaggerContainer className="occasionGrid">
@@ -533,7 +710,7 @@ function Home({ products, addToCart, wish, setWish }: { products: Product[]; add
             <StaggerItem key={o}>
               <motion.div whileHover={{ x: -12, backgroundColor: 'var(--paper)' }} transition={{ duration: .3, ease }}>
                 <Link to={`/shop?cat=${encodeURIComponent(o)}`} className="occasionCard">
-                  <span className="occasionNum">0{i + 1}</span>
+                  <span className="occasionNum">{i < 9 ? `0${i + 1}` : i + 1}</span>
                   <b>{o}</b>
                   <ArrowLeft size={18} />
                 </Link>
@@ -546,10 +723,10 @@ function Home({ products, addToCart, wish, setWish }: { products: Product[]; add
       <section className="section" id="shop">
         <div className="sectionHead">
           <AnimateScroll>
-            <div><span className="eyebrow">CURATED COLLECTION</span><h2>اختياراتنا المميزة</h2></div>
+            <div><span className="eyebrow">CURATED COLLECTION</span><h2>{t.curated}</h2></div>
           </AnimateScroll>
           <AnimateScroll delay={.1}>
-            <Link className="textLink" to="/shop">شاهدي المجموعة كاملة <ArrowLeft size={16} /></Link>
+            <Link className="textLink" to="/shop">{t.allCollection} <ArrowLeft size={16} /></Link>
           </AnimateScroll>
         </div>
         <StaggerContainer className="productGrid">
@@ -597,10 +774,10 @@ function Home({ products, addToCart, wish, setWish }: { products: Product[]; add
       <section className="section" id="bestsellers">
         <div className="sectionHead">
           <AnimateScroll>
-            <div><span className="eyebrow">BEST SELLERS</span><h2>الأكثر مبيعاً</h2></div>
+            <div><span className="eyebrow">BEST SELLERS</span><h2>{t.bestSellers}</h2></div>
           </AnimateScroll>
           <AnimateScroll delay={.1}>
-            <Link className="textLink" to="/shop">شاهدي الكل <ArrowLeft size={16} /></Link>
+            <Link className="textLink" to="/shop">{t.viewAll} <ArrowLeft size={16} /></Link>
           </AnimateScroll>
         </div>
         <div className="bestSellersScroll">
@@ -630,12 +807,12 @@ function Home({ products, addToCart, wish, setWish }: { products: Product[]; add
         <AnimateScroll>
           <div className="newsletterInner">
             <span className="eyebrow">STAY CONNECTED</span>
-            <h2>ابقي على تواصل</h2>
-            <p>سجّلي للحصول على أحدث التصاميم والعروض الحصرية مباشرة في بريدك.</p>
+            <h2>{t.stayConnected}</h2>
+            <p>{t.subscribeText}</p>
             <div className="newsletterForm">
               <input type="email" placeholder="بريدك الإلكتروني" />
               <motion.button className="btn primary" whileHover={{ y: -2 }} whileTap={{ scale: .96 }}>
-                <Send size={16} /> اشتركي
+                <Send size={16} /> {t.subscribeBtn}
               </motion.button>
             </div>
           </div>
@@ -645,7 +822,7 @@ function Home({ products, addToCart, wish, setWish }: { products: Product[]; add
       <section className="section faq" id="faq">
         <AnimateScroll>
           <div className="sectionHead center">
-            <div><span className="eyebrow">FAQ</span><h2>الأسئلة الشائعة</h2></div>
+            <div><span className="eyebrow">FAQ</span><h2>{t.faqTitle}</h2></div>
           </div>
         </AnimateScroll>
         <StaggerContainer className="faqList">
@@ -692,17 +869,17 @@ function Home({ products, addToCart, wish, setWish }: { products: Product[]; add
         viewport={{ once: true }}
         transition={{ duration: .8 }}
       >
-        <span className="eyebrow">LET'S CREATE</span>
-        <h2>-transforming moments into memories-</h2>
+        <span className="eyebrow">{t.letsCreate}</span>
+        <h2>{t.transforming}</h2>
         <motion.div whileHover={{ y: -4, boxShadow: '0 15px 40px rgba(0,0,0,.25)' }} whileTap={{ scale: .96 }}>
-          <Link className="btn light btnLg" to="/custom">ابدئي رحلتك <Sparkles size={18} /></Link>
+          <Link className="btn light btnLg" to="/custom">{t.startJourney} <Sparkles size={18} /></Link>
         </motion.div>
       </motion.section>
     </>
   );
 }
 
-function ShopPage({ products, addToCart, wish, setWish }: { products: Product[]; addToCart: (p: Product) => void; wish: string[]; setWish: (x: string[]) => void }) {
+function ShopPage({ products, addToCart, wish, setWish, t }: { products: Product[]; addToCart: (p: Product) => void; wish: string[]; setWish: (x: string[]) => void; t: typeof translations.ar }) {
   const location = useLocation();
   const [q, setQ] = useState('');
   const [cat, setCat] = useState(new URLSearchParams(location.search).get('cat') || '');
@@ -724,7 +901,7 @@ function ShopPage({ products, addToCart, wish, setWish }: { products: Product[];
 
       <div className="shopToolbar">
         <AnimateScroll>
-          <div className="searchBar"><Search size={18} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="ابحثي عن توزيعة…" /></div>
+          <div className="searchBar"><Search size={18} /><input value={q} onChange={e => setQ(e.target.value)} placeholder={t.searchPlaceholder} /></div>
         </AnimateScroll>
         <AnimateScroll delay={.05}>
           <div className="shopSort">
@@ -773,7 +950,7 @@ function ShopPage({ products, addToCart, wish, setWish }: { products: Product[];
   );
 }
 
-function ProductPage({ products, addToCart, wish, setWish }: { products: Product[]; addToCart: (p: Product) => void; wish: string[]; setWish: (x: string[]) => void }) {
+function ProductPage({ products, addToCart, wish, setWish, t }: { products: Product[]; addToCart: (p: Product) => void; wish: string[]; setWish: (x: string[]) => void; t: typeof translations.ar }) {
   const { id } = useParams();
   const p = products.find(x => x.id === id) || products[0];
   const [qty, setQty] = useState(1);
@@ -830,7 +1007,7 @@ function ProductPage({ products, addToCart, wish, setWish }: { products: Product
                 onClick={() => { for (let i = 0; i < qty; i++) addToCart(p); }}
                 disabled={p.stock === 0}
               >
-                <ShoppingBag size={18} /> أضيفي للسلة
+                <ShoppingBag size={18} /> {t.addToCart}
               </motion.button>
               <motion.button
                 className="btn ghost"
@@ -839,7 +1016,7 @@ function ProductPage({ products, addToCart, wish, setWish }: { products: Product
                 onClick={() => setWish(liked ? wish.filter(x => x !== p.id) : [...wish, p.id])}
               >
                 <Heart size={18} fill={liked ? 'var(--rose)' : 'none'} color={liked ? 'var(--rose)' : 'currentColor'} />
-                {liked ? 'محفوظة' : 'حفظ'}
+                {liked ? t.saved : t.save}
               </motion.button>
             </div>
           </AnimateScroll>
@@ -851,7 +1028,7 @@ function ProductPage({ products, addToCart, wish, setWish }: { products: Product
                 onClick={() => setDetailsOpen(!detailsOpen)}
                 whileHover={{ x: 4 }}
               >
-                تفاصيل المنتج
+                {t.productDetails}
                 <motion.span animate={{ rotate: detailsOpen ? 180 : 0 }} transition={{ duration: .3 }}>
                   <ChevronDown size={18} />
                 </motion.span>
@@ -919,7 +1096,7 @@ function Choice({ title, values, value, onChange }: { title: string; values: str
   );
 }
 
-function Customizer() {
+function Customizer({ t }: { t: typeof translations.ar }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Design>({ occasion: 'زفاف', type: 'علبة', qty: 30, color: 'آيفوري وذهبي', name: '', date: '', extras: '' });
   const [sent, setSent] = useState(false);
@@ -1055,19 +1232,20 @@ function Customizer() {
 }
 
 type SetCart = React.Dispatch<React.SetStateAction<CartItem[]>>;
-function CheckoutPage({ cart, setCart, cartTotal }: { cart: CartItem[]; setCart: SetCart; cartTotal: number }) {
+function CheckoutPage({ cart, setCart, cartTotal, t }: { cart: CartItem[]; setCart: SetCart; cartTotal: number; t: typeof translations.ar }) {
   const nav = useNavigate();
-  const [form, setForm] = useState({ name: '', phone: '', email: '', city: 'القاهرة', address: '', occasion: 'سبوع', notes: '', payment: 'cod' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', city: 'القاهرة', address: '', occasion: 'سبوع', notes: '', payment: 'instapay' });
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponError, setCouponError] = useState('');
   const [done, setDone] = useState<string | null>(null);
 
-  const shipping = cartTotal >= 500 ? 0 : 25;
+  // Per business specs, shipping & final price are confirmed after admin review, but we show estimated starting subtotal & request submission
+  const estimatedShipping = cartTotal >= 500 ? 0 : 25;
   const discount = appliedCoupon
     ? appliedCoupon.type === 'percent' ? Math.round(cartTotal * appliedCoupon.discount / 100) : appliedCoupon.discount
     : 0;
-  const finalTotal = cartTotal - discount + shipping;
+  const estimatedTotal = cartTotal - discount + estimatedShipping;
 
   const defaultCoupons: Coupon[] = [
     { id: 'c1', code: 'MOMENTS10', discount: 10, type: 'percent', maxUsage: 100, usageCount: 12, minOrder: 200, expiry: '2026-12-31', active: true },
@@ -1086,12 +1264,32 @@ function CheckoutPage({ cart, setCart, cartTotal }: { cart: CartItem[]; setCart:
     e.preventDefault();
     if (!cart.length) return;
     const orderNo = `EM-${Date.now().toString().slice(-8)}`;
+    const orderData = {
+      order_number: orderNo,
+      customer_name: form.name,
+      customer_phone: form.phone,
+      customer_email: form.email,
+      city: form.city,
+      address: form.address,
+      occasion: form.occasion,
+      notes: form.notes,
+      payment_method: form.payment,
+      subtotal: cartTotal,
+      shipping_fee: estimatedShipping,
+      total: estimatedTotal,
+      status: 'قيد المراجعة',
+      payment_status: 'بانتظار تأكيد السعر والشحن',
+      items: cart,
+      created_at: new Date().toISOString()
+    };
+
     if (supabase) {
       const { data, error } = await supabase.from('orders').insert({
         order_number: orderNo, customer_name: form.name, customer_phone: form.phone,
         customer_email: form.email, city: form.city, address: form.address,
         occasion: form.occasion, notes: form.notes, payment_method: form.payment,
-        subtotal: cartTotal, shipping_fee: shipping, total: finalTotal
+        subtotal: cartTotal, shipping_fee: estimatedShipping, total: estimatedTotal,
+        status: 'قيد المراجعة', payment_status: 'بانتظار تأكيد السعر والشحن'
       }).select().single();
       if (error) { alert(error.message); return; }
       await supabase.from('order_items').insert(cart.map(i => ({
@@ -1099,10 +1297,9 @@ function CheckoutPage({ cart, setCart, cartTotal }: { cart: CartItem[]; setCart:
         unit_price: i.price, quantity: i.qty, total: i.price * i.qty
       })));
     } else {
-      localStorage.setItem('em-last-order', JSON.stringify({
-        orderNo, ...form, total: finalTotal, items: cart, status: 'قيد المراجعة',
-        created_at: new Date().toISOString()
-      }));
+      localStorage.setItem('em-last-order', JSON.stringify(orderData));
+      const existingOrders = getLocal<any[]>('em-all-orders', []);
+      localStorage.setItem('em-all-orders', JSON.stringify([orderData, ...existingOrders]));
     }
     setCart([]);
     setDone(orderNo);
@@ -1113,11 +1310,11 @@ function CheckoutPage({ cart, setCart, cartTotal }: { cart: CartItem[]; setCart:
       <motion.div className="successIcon" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}>
         <Check size={48} />
       </motion.div>
-      <h1>تم استلام طلبك</h1>
+      <h1>تم استلام طلبك بنجاح</h1>
       <p className="orderNumber">رقم الطلب: <b>{done}</b></p>
-      <p>احتفظي بالرقم لمتابعة حالة الطلب.</p>
+      <p>سيقوم فريق إسراء مومنتس بمراجعة تفاصيل التخصيص والكمية وتأكيد السعر النهائي ومصاريف الشحن معك قريباً.</p>
       <motion.div whileHover={{ y: -3 }} whileTap={{ scale: .96 }}>
-        <Link className="btn primary" to={`/track?order=${done}`}><MapPin size={18} /> تتبع الطلب</Link>
+        <Link className="btn primary" to={`/track?order=${done}`}><MapPin size={18} /> تتبع الطلب والدفع</Link>
       </motion.div>
     </motion.section>
   );
@@ -1125,7 +1322,7 @@ function CheckoutPage({ cart, setCart, cartTotal }: { cart: CartItem[]; setCart:
   return (
     <motion.section className="section page" {...pageVariants}>
       <div className="sectionHead">
-        <AnimateScroll><div><span className="eyebrow">CHECKOUT</span><h2>إتمام الطلب</h2></div></AnimateScroll>
+        <AnimateScroll><div><span className="eyebrow">ORDER REQUEST</span><h2>إرسال طلب التوزيعات</h2></div></AnimateScroll>
       </div>
       <form className="checkoutGrid" onSubmit={submit}>
         <div className="checkoutFields">
@@ -1133,17 +1330,17 @@ function CheckoutPage({ cart, setCart, cartTotal }: { cart: CartItem[]; setCart:
           <AnimateScroll delay={.05}><label><span className="labelIcon"><Phone size={14} /></span> رقم الهاتف<input required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} dir="ltr" /></label></AnimateScroll>
           <AnimateScroll delay={.1}><label><span className="labelIcon"><Mail size={14} /></span> البريد الإلكتروني<input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></label></AnimateScroll>
           <AnimateScroll delay={.15}><label><span className="labelIcon"><MapPin size={14} /></span> المدينة<select value={form.city} onChange={e => setForm({ ...form, city: e.target.value })}><option>القاهرة</option><option>الإسكندرية</option><option>الجيزة</option><option>المنصورة</option><option>أخرى</option></select></label></AnimateScroll>
-          <AnimateScroll delay={.2}><label className="wide"><span className="labelIcon"><MapPin size={14} /></span> العنوان بالتفصيل<textarea required value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></label></AnimateScroll>
+          <AnimateScroll delay={.2}><label className="wide"><span className="labelIcon"><MapPin size={14} /></span> العنوان بالتفصيل للشحن<textarea required value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></label></AnimateScroll>
           <AnimateScroll delay={.25}><label><span className="labelIcon"><Gift size={14} /></span> المناسبة<select value={form.occasion} onChange={e => setForm({ ...form, occasion: e.target.value })}>{occasions.map(o => <option key={o}>{o}</option>)}</select></label></AnimateScroll>
-          <AnimateScroll delay={.3}><label className="wide"><span className="labelIcon"><Edit3 size={14} /></span> الملاحظات<textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="أي ملاحظات إضافية…" /></label></AnimateScroll>
+          <AnimateScroll delay={.3}><label className="wide"><span className="labelIcon"><Edit3 size={14} /></span> ملاحظات التخصيص أو الأسماء المطلوب طباعتها<textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="مثال: الأسماء المطلوب طباعتها، الألوان، أو أي تعليمات خاصة…" /></label></AnimateScroll>
 
           <AnimateScroll delay={.35}>
             <div className="paymentSection">
-              <p className="paymentTitle"><CreditCard size={16} /> طريقة الدفع</p>
+              <p className="paymentTitle"><CreditCard size={16} /> طريقة الدفع المفضلة (تتم بعد تأكيد السعر والشحن)</p>
               {([
+                { key: 'instapay', label: 'إنستاباي / محفظة إلكترونية', icon: <DollarSign size={16} /> },
                 { key: 'cod', label: 'الدفع عند الاستلام', icon: <Truck size={16} /> },
-                { key: 'fawry', label: 'فودافون كاش', icon: <DollarSign size={16} /> },
-                { key: 'card', label: 'البطاقات الائتمانية', icon: <CreditCard size={16} /> }
+                { key: 'card', label: 'بطاقة ائتمانية', icon: <CreditCard size={16} /> }
               ] as const).map(opt => (
                 <motion.button
                   key={opt.key}
@@ -1161,7 +1358,7 @@ function CheckoutPage({ cart, setCart, cartTotal }: { cart: CartItem[]; setCart:
 
         <AnimateScroll>
           <div className="orderSummaryCard">
-            <h3>ملخص الطلب</h3>
+            <h3>{t.orderSummary}</h3>
             {cart.map(i => (
               <div key={i.id} className="summaryItem">
                 <span>{i.name} × {i.qty}</span>
@@ -1169,8 +1366,8 @@ function CheckoutPage({ cart, setCart, cartTotal }: { cart: CartItem[]; setCart:
               </div>
             ))}
             <hr />
-            <div className="summaryItem"><span>المنتجات</span><b>{money(cartTotal)}</b></div>
-            <div className="summaryItem"><span>الشحن</span><b className={shipping === 0 ? 'freeShipping' : ''}>{shipping ? money(shipping) : 'مجاني'}</b></div>
+            <div className="summaryItem"><span>{t.subtotal}</span><b>{money(cartTotal)}</b></div>
+            <div className="summaryItem"><span>{t.shipping} (تقديري)</span><b className={estimatedShipping === 0 ? 'freeShipping' : ''}>{estimatedShipping ? money(estimatedShipping) : t.free}</b></div>
 
             <div className="couponSection">
               <div className="couponInput">
@@ -1187,10 +1384,11 @@ function CheckoutPage({ cart, setCart, cartTotal }: { cart: CartItem[]; setCart:
 
             {discount > 0 && <div className="summaryItem discount"><span>الخصم</span><b>-{money(discount)}</b></div>}
             <hr />
-            <div className="summaryGrand"><span>الإجمالي</span><b>{money(finalTotal)}</b></div>
-            <motion.div whileHover={{ y: -3 }} whileTap={{ scale: .96 }}>
+            <div className="summaryGrand"><span>الإجمالي (تقديري)</span><b>{money(estimatedTotal)}</b></div>
+            <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>* السعر النهائي ومصاريف الشحن يتم تأكيدها من قِبل الإدارة بعد مراجعة تفاصيل التخصيص والكمية.</p>
+            <motion.div whileHover={{ y: -3 }} whileTap={{ scale: .96 }} style={{ marginTop: 16 }}>
               <button className="btn primary full btnLg" type="submit" disabled={!cart.length}>
-                <Send size={18} /> تأكيد الطلب
+                <Send size={18} /> إرسال طلب التوزيعات
               </button>
             </motion.div>
           </div>
@@ -1200,15 +1398,17 @@ function CheckoutPage({ cart, setCart, cartTotal }: { cart: CartItem[]; setCart:
   );
 }
 
-function TrackingPage() {
+function TrackingPage({ t }: { t: typeof translations.ar }) {
   const location = useLocation();
   const q = new URLSearchParams(location.search).get('order');
   const [order, setOrder] = useState<any>(null);
   const [input, setInput] = useState(q || '');
   const [found, setFound] = useState<boolean | null>(null);
+  const [proofFile, setProofFile] = useState<string | null>(null);
+  const [proofSubmitted, setProofSubmitted] = useState(false);
 
-  const statusList = ['قيد المراجعة', 'مؤكد', 'قيد التنفيذ', 'تم الشحن', 'تم التسليم'];
-  const statusIdx = statusList.indexOf(order?.status || 'قيد المراجعة');
+  const statusList = ['قيد المراجعة', 'تم تأكيد السعر', 'بانتظار الدفع', 'تم رفع إيصال الدفع', 'تم التحقق والإنتاج', 'تم الشحن', 'مكتمل'];
+  const statusIdx = statusList.indexOf(order?.status || order?.payment_status || 'قيد المراجعة');
 
   const search = async () => {
     if (!input.trim()) return;
@@ -1216,18 +1416,36 @@ function TrackingPage() {
       const { data } = await supabase.from('orders').select('*').eq('order_number', input.trim()).maybeSingle();
       setOrder(data); setFound(!!data);
     } else {
-      const x = getLocal<any | null>('em-last-order', null);
-      if (x?.orderNo === input.trim()) { setOrder(x); setFound(true); }
+      const allOrders = getLocal<any[]>('em-all-orders', []);
+      const foundOrd = allOrders.find(o => o.order_number === input.trim() || o.orderNo === input.trim());
+      const lastOrd = getLocal<any | null>('em-last-order', null);
+      const match = foundOrd || (lastOrd?.orderNo === input.trim() ? lastOrd : null);
+      if (match) { setOrder(match); setFound(true); }
       else { setOrder(null); setFound(false); }
     }
   };
 
   useEffect(() => { if (q) { setInput(q); setTimeout(search, 300); } }, [q]);
 
+  const handleProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProofFile(file.name);
+      setProofSubmitted(true);
+      if (order) {
+        const updated = { ...order, status: 'تم رفع إيصال الدفع', payment_status: 'تم رفع إيصال الدفع (قيد التحقق)' };
+        setOrder(updated);
+        localStorage.setItem('em-last-order', JSON.stringify(updated));
+        const allOrders = getLocal<any[]>('em-all-orders', []).map(o => (o.order_number === order.order_number || o.orderNo === order.orderNo) ? updated : o);
+        localStorage.setItem('em-all-orders', JSON.stringify(allOrders));
+      }
+    }
+  };
+
   return (
     <motion.section className="section page" {...pageVariants}>
       <div className="sectionHead">
-        <AnimateScroll><div><span className="eyebrow">ORDER TRACKING</span><h2>تتبعي طلبك</h2></div></AnimateScroll>
+        <AnimateScroll><div><span className="eyebrow">ORDER TRACKING & PAYMENT</span><h2>تتبعي طلبك والدفع</h2></div></AnimateScroll>
       </div>
       <div className="trackingPage">
         <AnimateScroll>
@@ -1249,20 +1467,42 @@ function TrackingPage() {
                 </div>
               </div>
               <div className="trackingMeta">
-                <div><span>الحالة</span><b>{order.status || 'قيد المراجعة'}</b></div>
-                <div><span>الإجمالي</span><b>{money(Number(order.total || 0))}</b></div>
+                <div><span>حالة الطلب</span><b>{order.status || 'قيد المراجعة'}</b></div>
+                <div><span>حالة الدفع</span><b className="priceGrad">{order.payment_status || 'بانتظار تأكيد السعر والشحن'}</b></div>
+                <div><span>المبلغ الإجمالي النهائي</span><b className="priceGrad">{money(Number(order.total || 0))}</b></div>
+                <div><span>مصاريف الشحن المؤكدة</span><b>{money(Number(order.shipping_fee || 25))}</b></div>
                 <div><span>العنوان</span><b>{order.city || '---'} - {order.address || '---'}</b></div>
               </div>
-              <div className="trackingTimeline">
+
+              {/* Payment instructions & proof upload */}
+              <div className="paymentWorkflowBox" style={{ marginTop: 24, padding: 20, background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                <h4><CreditCard size={18} /> تعليمات الدفع والتحويل</h4>
+                <p style={{ marginTop: 8, fontSize: 14 }}>يرجى التحويل عبر InstaPay أو محفظة فودافون كاش إلى الرقم: <b>01000000000</b> بالمبلغ الإجمالي النهائي ({money(Number(order.total || 0))}).</p>
+                <p style={{ marginTop: 4, fontSize: 13, color: 'var(--muted)' }}>بعد التحويل، قومي برفع صورة إيصال التحويل أدناه ليقوم فريق الإدارة بالتحقق واعتماد الطلب فوراً.</p>
+                
+                <div style={{ marginTop: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <label className="btn primary" style={{ cursor: 'pointer' }}>
+                    <Upload size={16} /> رفع إيصال الدفع
+                    <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={handleProofUpload} />
+                  </label>
+                  {(proofFile || proofSubmitted || order.payment_status?.includes('تم رفع')) && (
+                    <span style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+                      <Check size={16} /> تم رفع الإيصال بنجاح ({proofFile || 'إيصال التحويل'}) — قيد التحقق من الإدارة
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="trackingTimeline" style={{ marginTop: 24 }}>
                 {statusList.map((s, i) => (
                   <motion.span
                     key={s}
-                    className={i <= statusIdx ? 'timelineStep active' : 'timelineStep'}
+                    className={i <= (statusIdx >= 0 ? statusIdx : 0) ? 'timelineStep active' : 'timelineStep'}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * .1 }}
                   >
-                    <i>{i <= statusIdx ? <Check size={14} /> : i + 1}</i>{s}
+                    <i>{i <= (statusIdx >= 0 ? statusIdx : 0) ? <Check size={14} /> : i + 1}</i>{s}
                   </motion.span>
                 ))}
               </div>
@@ -1281,7 +1521,7 @@ function TrackingPage() {
             <div className="emptyState">
               <MapPin size={48} strokeWidth={1} />
               <h3>أدخلي رقم الطلب</h3>
-              <p>لعرض آخر حالة متاحة لطلبك.</p>
+              <p>لعرض تفاصيل السعر، الشحن، وحالة الدفع.</p>
             </div>
           </AnimateScroll>
         )}
@@ -1290,7 +1530,7 @@ function TrackingPage() {
   );
 }
 
-function LoginPage() {
+function LoginPage({ t }: { t: typeof translations.ar }) {
   const nav = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -1345,7 +1585,7 @@ function LoginPage() {
   );
 }
 
-function AdminPage() {
+function AdminPage({ t }: { t: typeof translations.ar }) {
   const [tab, setTab] = useState('dashboard');
   const [logged, setLogged] = useState(localStorage.getItem('em-admin-demo') === '1');
   const [orders, setOrders] = useState<Order[]>([]);
@@ -1372,6 +1612,14 @@ function AdminPage() {
           id: x.id, name: x.name, category: x.categories?.name || '', price: Number(x.price),
           stock: x.stock, image: x.image_url || seed[0].image, desc: x.description || ''
         })));
+      } else {
+        const localOrders = getLocal<Order[]>('em-all-orders', []);
+        const lastOrder = getLocal<Order | null>('em-last-order', null);
+        let combined = localOrders;
+        if (lastOrder && !combined.some(o => o.order_number === lastOrder.order_number)) {
+          combined = [lastOrder, ...combined];
+        }
+        if (combined.length) setOrders(combined);
       }
     })();
   }, []);
@@ -1406,7 +1654,7 @@ function AdminPage() {
   const tabs: [string, string, any][] = [
     ['dashboard', 'نظرة عامة', LayoutDashboard],
     ['products', 'المنتجات', Box],
-    ['orders', 'الطلبات', Package],
+    ['orders', 'الطلبات والأسعار', Package],
     ['customers', 'العملاء', Users],
     ['coupons', 'الكوبونات', Tag],
     ['settings', 'الإعدادات', Settings],
@@ -1474,8 +1722,8 @@ function DashboardPanel({ orders, products }: { orders: Order[]; products: Produ
     <>
       <StaggerContainer className="statsGrid">
         {([
-          { label: 'المبيعات', value: money(totalSales), Icon: TrendingUp, sub: 'إجمالي المبيعات' },
-          { label: 'الطلبات', value: orders.length.toString(), Icon: Package, sub: 'عدد الطلبات' },
+          { label: 'المبيعات', value: money(totalSales), Icon: TrendingUp, sub: 'إجمالي المبيعات المؤكدة' },
+          { label: 'الطلبات', value: orders.length.toString(), Icon: Package, sub: 'طلبات العملاء' },
           { label: 'المنتجات', value: products.length.toString(), Icon: Box, sub: 'في الكتالوج' },
           { label: 'العملاء', value: new Set(orders.map(o => o.customer_name)).size.toString(), Icon: Users, sub: 'عملاء فريدون' },
         ] as const).map((item, i) => (
@@ -1493,19 +1741,19 @@ function DashboardPanel({ orders, products }: { orders: Order[]; products: Produ
       <div className="adminGrid">
         <div className="adminPanel">
           <div className="panelHead">
-            <h3><Clock size={18} /> آخر الطلبات</h3>
+            <h3><Clock size={18} /> آخر الطلبات وتأكيد الأسعار</h3>
             <span className="muted">{orders.length} طلب</span>
           </div>
           <div className="adminTable">
             <div className="adminTableRow header">
-              <span>رقم الطلب</span><span>العميل</span><span>الإجمالي</span><span>الحالة</span><span>التاريخ</span>
+              <span>رقم الطلب</span><span>العميل</span><span>الإجمالي</span><span>حالة الدفع</span><span>التاريخ</span>
             </div>
             {recentOrders.map(o => (
-              <motion.div className="adminTableRow" key={o.id} whileHover={{ backgroundColor: 'var(--paper)' }}>
-                <span><b>{o.order_number}</b></span>
+              <motion.div className="adminTableRow" key={o.id || o.order_number} whileHover={{ backgroundColor: 'var(--paper)' }}>
+                <span><b>{o.order_number || o.orderNo}</b></span>
                 <span>{o.customer_name}</span>
                 <span>{money(Number(o.total || 0))}</span>
-                <span><span className={`badge ${o.status?.includes('تم التسليم') ? 'badgeSuccess' : o.status?.includes('تم الشحن') ? 'badgeInfo' : o.status?.includes('ملغي') ? 'badgeDanger' : 'badgeWarning'}`}>{o.status || 'قيد المراجعة'}</span></span>
+                <span><span className="badge badgeWarning">{o.payment_status || o.status || 'قيد المراجعة'}</span></span>
                 <small>{o.created_at ? new Date(o.created_at).toLocaleDateString('ar-EG') : '---'}</small>
               </motion.div>
             ))}
@@ -1539,7 +1787,6 @@ function ProductsAdmin({ products, setProducts }: { products: Product[]; setProd
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', category: 'سبوع', price: '', stock: '', image: '', desc: '', featured: false });
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const resetForm = () => { setForm({ name: '', category: 'سبوع', price: '', stock: '', image: '', desc: '', featured: false }); setEditId(null); setShowForm(false); };
   const startEdit = (p: Product) => { setForm({ name: p.name, category: p.category, price: String(p.price), stock: String(p.stock), image: p.image, desc: p.desc, featured: !!p.featured }); setEditId(p.id); setShowForm(true); };
@@ -1554,7 +1801,7 @@ function ProductsAdmin({ products, setProducts }: { products: Product[]; setProd
     resetForm();
   };
 
-  const deleteProduct = (id: string) => { setProducts(prev => prev.filter(p => p.id !== id)); setDeleteConfirm(null); };
+  const deleteProduct = (id: string) => { setProducts(prev => prev.filter(p => p.id !== id)); };
 
   return (
     <div className="adminPanel">
@@ -1570,7 +1817,7 @@ function ProductsAdmin({ products, setProducts }: { products: Product[]; setProd
           <motion.div className="adminForm" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: .3 }}>
             <div className="formGrid">
               <label>اسم المنتج<input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></label>
-              <label>القسم<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{occasions.map(o => <option key={o}>{o}</option>)}</select></label>
+              <label>القسم / المناسبة<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{occasions.map(o => <option key={o}>{o}</option>)}</select></label>
               <label><DollarSign size={14} /> السعر (ج.م)<input type="number" min="0" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required /></label>
               <label><Package size={14} /> المخزون<input type="number" min="0" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} required /></label>
               <label className="wide"><ImageIcon size={14} /> رابط الصورة<input value={form.image} onChange={e => setForm({ ...form, image: e.target.value })} placeholder="/images/..." /></label>
@@ -1587,31 +1834,20 @@ function ProductsAdmin({ products, setProducts }: { products: Product[]; setProd
 
       <div className="adminTable">
         <div className="adminTableRow header">
-          <span>الصورة</span><span>المنتج</span><span>القسم</span><span>السعر</span><span>المخزون</span><span>الحالة</span><span>إجراءات</span>
+          <span>الصورة</span><span>المنتج</span><span>القسم</span><span>السعر</span><span>المخزون</span><span>إجراءات</span>
         </div>
         <AnimatePresence>
           {products.map(p => (
             <motion.div className="adminTableRow" key={p.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, x: -30 }} whileHover={{ backgroundColor: 'var(--paper)' }}>
-              <span><img src={p.image} alt={p.name} className="tableThumb" /></span>
-              <span><b>{p.name}</b><br /><small className="muted">{p.desc?.slice(0, 35)}…</small></span>
+              <span><img src={p.image} alt={p.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8 }} /></span>
+              <span><b>{p.name}</b><small className="muted">{p.desc.slice(0, 40)}...</small></span>
               <span>{p.category}</span>
               <span>{money(p.price)}</span>
-              <span>
-                <div className="stockBar"><i style={{ width: `${Math.min(100, (p.stock / 150) * 100)}%`, backgroundColor: p.stock < 20 ? 'var(--danger)' : p.stock < 50 ? 'var(--warn)' : 'var(--rose)' }} /></div>
-                <small>{p.stock}</small>
+              <span>{p.stock} قطعة</span>
+              <span className="tableActions">
+                <button className="icon" onClick={() => startEdit(p)} title="تعديل"><Edit3 size={16} /></button>
+                <button className="icon" onClick={() => deleteProduct(p.id)} title="حذف" style={{ color: 'var(--danger)' }}><Trash2 size={16} /></button>
               </span>
-              <span>{p.stock > 0 ? <span className="badge badgeSuccess">نشط</span> : <span className="badge badgeDanger">نفذ</span>}</span>
-              <span className="rowActions">
-                <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: .9 }} onClick={() => startEdit(p)}><Edit3 size={14} /></motion.button>
-                <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: .9 }} onClick={() => setDeleteConfirm(p.id)}><Trash2 size={14} /></motion.button>
-              </span>
-              {deleteConfirm === p.id && (
-                <motion.div className="confirmOverlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <span>حذف المنتج؟</span>
-                  <motion.button className="btn danger" whileTap={{ scale: .95 }} onClick={() => deleteProduct(p.id)}>نعم</motion.button>
-                  <motion.button className="btn ghost" whileTap={{ scale: .95 }} onClick={() => setDeleteConfirm(null)}>لا</motion.button>
-                </motion.div>
-              )}
             </motion.div>
           ))}
         </AnimatePresence>
@@ -1620,219 +1856,162 @@ function ProductsAdmin({ products, setProducts }: { products: Product[]; setProd
   );
 }
 
-function OrdersAdmin({ orders, setOrders }: { orders: Order[]; setOrders: (o: Order[] | ((prev: Order[]) => Order[])) => void }) {
-  const [filter, setFilter] = useState('الكل');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const statuses = ['الكل', 'قيد المراجعة', 'مؤكد', 'قيد التنفيذ', 'تم الشحن', 'تم التسليم'];
-  const filtered = filter === 'الكل' ? orders : orders.filter(o => o.status === filter);
+function OrdersAdmin({ orders, setOrders }: { orders: Order[]; setOrders: (o: Order[]) => void }) {
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [editPrice, setEditPrice] = useState('');
+  const [editShipping, setEditShipping] = useState('');
+  const [editPaymentStatus, setEditPaymentStatus] = useState('');
 
-  const updateStatus = async (id: string, status: string) => {
-    if (supabase) await supabase.from('orders').update({ status }).eq('id', id);
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+  const updateOrderPricing = (o: Order) => {
+    const newTotal = Number(editPrice || o.subtotal) + Number(editShipping || o.shipping_fee);
+    const updated = {
+      ...o,
+      subtotal: Number(editPrice || o.subtotal),
+      shipping_fee: Number(editShipping || o.shipping_fee),
+      total: newTotal,
+      status: 'تم تأكيد السعر',
+      payment_status: editPaymentStatus || 'بانتظار الدفع'
+    };
+    const newOrders = orders.map(x => (x.id === o.id || x.order_number === o.order_number) ? updated : x);
+    setOrders(newOrders);
+    localStorage.setItem('em-all-orders', JSON.stringify(newOrders));
+    setSelectedOrder(null);
+    alert('تم تحديث السعر ومصاريف الشحن بنجاح!');
   };
 
-  const statusColor = (s: string) => s?.includes('تم التسليم') ? 'badgeSuccess' : s?.includes('تم الشحن') ? 'badgeInfo' : s?.includes('ملغي') ? 'badgeDanger' : s?.includes('مؤكد') ? 'badgeSuccess' : 'badgeWarning';
-  const allStatuses = ['قيد المراجعة', 'مؤكد', 'قيد التنفيذ', 'تم الشحن', 'تم التسليم'];
+  const verifyPayment = (o: Order) => {
+    const updated = { ...o, status: 'تم التحقق والإنتاج', payment_status: 'تم التحقق (مدفوع)' };
+    const newOrders = orders.map(x => (x.id === o.id || x.order_number === o.order_number) ? updated : x);
+    setOrders(newOrders);
+    localStorage.setItem('em-all-orders', JSON.stringify(newOrders));
+    setSelectedOrder(updated);
+    alert('تم التحقق من الدفع واعتماد الطلب للإنتاج!');
+  };
 
   return (
     <div className="adminPanel">
       <div className="panelHead">
-        <h3><Package size={18} /> إدارة الطلبات</h3>
-        <span className="muted">{filtered.length} طلب</span>
+        <h3><Package size={18} /> مراجعة الطلبات وتأكيد الأسعار والشحن</h3>
+        <span className="muted">{orders.length} طلب</span>
       </div>
-      <div className="filterTabs">
-        {statuses.map(s => (
-          <motion.button key={s} className={filter === s ? 'filterTab active' : 'filterTab'} onClick={() => setFilter(s)} whileHover={{ scale: 1.05 }} whileTap={{ scale: .95 }}>
-            {s} ({s === 'الكل' ? orders.length : orders.filter(o => o.status === s).length})
-          </motion.button>
-        ))}
-      </div>
+
       <div className="adminTable">
         <div className="adminTableRow header">
-          <span>رقم الطلب</span><span>العميل</span><span>الهاتف</span><span>الإجمالي</span><span>الحالة</span><span>التاريخ</span><span>إجراءات</span>
+          <span>رقم الطلب</span><span>العميل</span><span>المناسبة</span><span>المبلغ الإجمالي</span><span>حالة الدفع</span><span>الإجراء</span>
         </div>
-        <AnimatePresence>
-          {filtered.map(o => (
-            <React.Fragment key={o.id}>
-              <motion.div className="adminTableRow" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} whileHover={{ backgroundColor: 'var(--paper)' }}>
-                <span><b>{o.order_number}</b></span>
-                <span>{o.customer_name}</span>
-                <span dir="ltr">{o.customer_phone}</span>
-                <span>{money(Number(o.total || 0))}</span>
-                <span><span className={`badge ${statusColor(o.status || 'قيد المراجعة')}`}>{o.status || 'قيد المراجعة'}</span></span>
-                <small>{o.created_at ? new Date(o.created_at).toLocaleDateString('ar-EG') : '---'}</small>
-                <span className="rowActions">
-                  <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: .9 }} onClick={() => setExpandedId(expandedId === o.id ? null : o.id)}><Eye size={14} /></motion.button>
-                  <select className="statusSelect" value={o.status || 'قيد المراجعة'} onChange={e => updateStatus(o.id, e.target.value)}>
-                    {allStatuses.map(s => <option key={s}>{s}</option>)}
-                  </select>
-                </span>
-              </motion.div>
-              <AnimatePresence>
-                {expandedId === o.id && (
-                  <motion.div className="orderExpand" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: .3 }}>
-                    <div className="orderExpandContent">
-                      <div className="orderExpandGrid">
-                        <div><Mail size={14} /> البريد: {o.customer_email || '---'}</div>
-                        <div><MapPin size={14} /> العنوان: {o.city} - {o.address}</div>
-                        <div><Gift size={14} /> المناسبة: {o.occasion || '---'}</div>
-                        <div><CreditCard size={14} /> الدفع: {o.payment_method === 'cod' ? 'عند الاستلام' : o.payment_method === 'fawry' ? 'فودافون كاش' : 'بطاقة ائتمانية'}</div>
-                        {o.notes && <div className="orderNotes"><Edit3 size={14} /> ملاحظات: {o.notes}</div>}
-                      </div>
-                      <div className="trackingTimeline mini">
-                        {allStatuses.map((s, i) => (
-                          <motion.span key={s} className={i <= allStatuses.indexOf(o.status || 'قيد المراجعة') ? 'timelineStep active' : 'timelineStep'} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * .08 }}>
-                            <i>{i <= allStatuses.indexOf(o.status || 'قيد المراجعة') ? <Check size={12} /> : i + 1}</i>{s}
-                          </motion.span>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </React.Fragment>
-          ))}
-        </AnimatePresence>
-        {!filtered.length && <div className="adminTableRow"><span className="muted" style={{ gridColumn: '1/-1', textAlign: 'center', padding: 30 }}>لا توجد طلبات في هذه الفئة.</span></div>}
+        {orders.map(o => (
+          <motion.div className="adminTableRow" key={o.id || o.order_number} whileHover={{ backgroundColor: 'var(--paper)' }}>
+            <span><b>{o.order_number || o.orderNo}</b></span>
+            <span>{o.customer_name}<br /><small className="muted">{o.customer_phone}</small></span>
+            <span>{o.occasion}</span>
+            <span><b>{money(Number(o.total || 0))}</b></span>
+            <span><span className="badge badgeWarning">{o.payment_status || o.status || 'قيد المراجعة'}</span></span>
+            <span>
+              <motion.button className="btn btn-sm primary" whileHover={{ scale: 1.05 }} whileTap={{ scale: .95 }} onClick={() => { setSelectedOrder(o); setEditPrice(String(o.subtotal || 0)); setEditShipping(String(o.shipping_fee || 25)); setEditPaymentStatus(o.payment_status || 'بانتظار الدفع'); }}>
+                مراجعة وتأكيد <Eye size={14} />
+              </motion.button>
+            </span>
+          </motion.div>
+        ))}
+        {!orders.length && <div className="adminTableRow"><span className="muted" style={{ gridColumn: '1/-1', textAlign: 'center', padding: 40 }}>لا توجد طلبات حتى الآن.</span></div>}
       </div>
+
+      {selectedOrder && (
+        <div className="modalOverlay" onClick={() => setSelectedOrder(null)}>
+          <div className="modalCard" onClick={e => e.stopPropagation()}>
+            <div className="modalHead">
+              <h3>مراجعة تفاصيل الطلب: {selectedOrder.order_number || selectedOrder.orderNo}</h3>
+              <button className="icon" onClick={() => setSelectedOrder(null)}><X size={20} /></button>
+            </div>
+            <div className="modalBody" style={{ display: 'grid', gap: 16 }}>
+              <p><b>العميل:</b> {selectedOrder.customer_name} ({selectedOrder.customer_phone})</p>
+              <p><b>العنوان:</b> {selectedOrder.city} - {selectedOrder.address}</p>
+              <p><b>المناسبة:</b> {selectedOrder.occasion}</p>
+              <p><b>ملاحظات التخصيص:</b> {selectedOrder.notes || '---'}</p>
+
+              <hr />
+              <h4>تحديد السعر النهائي ومصاريف الشحن</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <label>سعر المنتجات النهائي (ج.م)
+                  <input type="number" className="input" value={editPrice} onChange={e => setEditPrice(e.target.value)} />
+                </label>
+                <label>مصاريف الشحن (ج.م)
+                  <input type="number" className="input" value={editShipping} onChange={e => setEditShipping(e.target.value)} />
+                </label>
+              </div>
+              <label>حالة الدفع
+                <select className="select" value={editPaymentStatus} onChange={e => setEditPaymentStatus(e.target.value)}>
+                  <option>بانتظار تأكيد السعر والشحن</option>
+                  <option>بانتظار الدفع</option>
+                  <option>تم رفع إيصال الدفع (قيد التحقق)</option>
+                  <option>تم التحقق (مدفوع)</option>
+                </select>
+              </label>
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+                <motion.button className="btn primary" whileTap={{ scale: .96 }} onClick={() => updateOrderPricing(selectedOrder)}>
+                  حفظ وتأكيد السعر والشحن للعميل
+                </motion.button>
+                {selectedOrder.payment_status?.includes('تم رفع') && (
+                  <motion.button className="btn" style={{ background: 'var(--success)', color: '#fff' }} whileTap={{ scale: .96 }} onClick={() => verifyPayment(selectedOrder)}>
+                    <Check size={16} /> التحقق من إيصال الدفع واعتماد الطلب
+                  </motion.button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function CustomersAdmin({ customers, orders }: { customers: Customer[]; orders: Order[] }) {
-  const [search, setSearch] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
-
-  const filtered = customers.filter(c => c.name.includes(search) || c.email.includes(search) || c.phone.includes(search));
-  const customerOrders = selectedCustomer ? orders.filter(o => o.customer_name === selectedCustomer) : [];
-
   return (
     <div className="adminPanel">
       <div className="panelHead">
         <h3><Users size={18} /> إدارة العملاء</h3>
-        <span className="muted">{filtered.length} عميل</span>
+        <span className="muted">{customers.length} عميل</span>
       </div>
-      <div className="searchBar" style={{ marginBottom: 16 }}><Search size={18} /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث عن عميل…" /></div>
       <div className="adminTable">
         <div className="adminTableRow header">
-          <span>العميل</span><span>البريد</span><span>الهاتف</span><span>الطلبات</span><span>إجمالي المشتريات</span><span>إجراءات</span>
+          <span>اسم العميل</span><span>الهاتف</span><span>البريد</span><span>عدد الطلبات</span><span>إجمالي الإنفاق</span>
         </div>
-        {filtered.map(c => (
-          <motion.div className="adminTableRow" key={c.name} whileHover={{ backgroundColor: 'var(--paper)' }}>
+        {customers.map((c, i) => (
+          <motion.div className="adminTableRow" key={i} whileHover={{ backgroundColor: 'var(--paper)' }}>
             <span><b>{c.name}</b></span>
-            <span>{c.email || '---'}</span>
             <span dir="ltr">{c.phone || '---'}</span>
-            <span>{c.ordersCount}</span>
-            <span>{money(c.totalSpent)}</span>
-            <span className="rowActions">
-              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: .9 }} onClick={() => setSelectedCustomer(selectedCustomer === c.name ? null : c.name)}><Eye size={14} /></motion.button>
-            </span>
+            <span>{c.email || '---'}</span>
+            <span>{c.ordersCount} طلب</span>
+            <span className="priceGrad"><b>{money(c.totalSpent)}</b></span>
           </motion.div>
         ))}
-        {!filtered.length && <div className="adminTableRow"><span className="muted" style={{ gridColumn: '1/-1', textAlign: 'center', padding: 30 }}>لا يوجد عملاء بعد.</span></div>}
+        {!customers.length && <div className="adminTableRow"><span className="muted" style={{ gridColumn: '1/-1', textAlign: 'center', padding: 30 }}>لا يوجد عملاء بعد.</span></div>}
       </div>
-      <AnimatePresence>
-        {selectedCustomer && (
-          <motion.div className="adminPanel" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ marginTop: 16 }}>
-            <div className="panelHead">
-              <h3>طلبات {selectedCustomer}</h3>
-              <motion.button className="btn ghost" whileTap={{ scale: .95 }} onClick={() => setSelectedCustomer(null)}><X size={14} /> إغلاق</motion.button>
-            </div>
-            <div className="adminTable">
-              <div className="adminTableRow header">
-                <span>رقم الطلب</span><span>الإجمالي</span><span>الحالة</span><span>التاريخ</span>
-              </div>
-              {customerOrders.map(o => (
-                <div className="adminTableRow" key={o.id}>
-                  <span>{o.order_number}</span>
-                  <span>{money(Number(o.total || 0))}</span>
-                  <span><span className={`badge ${o.status?.includes('تم التسليم') ? 'badgeSuccess' : 'badgeWarning'}`}>{o.status || 'قيد المراجعة'}</span></span>
-                  <small>{o.created_at ? new Date(o.created_at).toLocaleDateString('ar-EG') : '---'}</small>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
 
-function CouponsAdmin({ coupons, setCoupons }: { coupons: Coupon[]; setCoupons: (c: Coupon[] | ((prev: Coupon[]) => Coupon[])) => void }) {
-  const [showForm, setShowForm] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ code: '', discount: '', type: 'percent' as 'percent' | 'fixed', maxUsage: '', minOrder: '', expiry: '', active: true });
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  const resetForm = () => { setForm({ code: '', discount: '', type: 'percent', maxUsage: '', minOrder: '', expiry: '', active: true }); setEditId(null); setShowForm(false); };
-  const startEdit = (c: Coupon) => { setForm({ code: c.code, discount: String(c.discount), type: c.type, maxUsage: String(c.maxUsage), minOrder: String(c.minOrder), expiry: c.expiry, active: c.active }); setEditId(c.id); setShowForm(true); };
-
-  const saveCoupon = () => {
-    if (!form.code || !form.discount) return;
-    if (editId) {
-      setCoupons(prev => prev.map(c => c.id === editId ? { ...c, code: form.code.toUpperCase(), discount: Number(form.discount), type: form.type, maxUsage: Number(form.maxUsage), minOrder: Number(form.minOrder), expiry: form.expiry, active: form.active } : c));
-    } else {
-      setCoupons(prev => [...prev, { id: `c${Date.now()}`, code: form.code.toUpperCase(), discount: Number(form.discount), type: form.type, maxUsage: Number(form.maxUsage) || 100, usageCount: 0, minOrder: Number(form.minOrder) || 0, expiry: form.expiry, active: form.active }]);
-    }
-    resetForm();
-  };
-
-  const toggleActive = (id: string) => setCoupons(prev => prev.map(c => c.id === id ? { ...c, active: !c.active } : c));
-  const deleteCoupon = (id: string) => { setCoupons(prev => prev.filter(c => c.id !== id)); setDeleteConfirm(null); };
-
+function CouponsAdmin({ coupons, setCoupons }: { coupons: Coupon[]; setCoupons: (c: Coupon[]) => void }) {
   return (
     <div className="adminPanel">
       <div className="panelHead">
-        <h3><Tag size={18} /> إدارة الكوبونات</h3>
-        <motion.button className="btn primary" whileHover={{ scale: 1.05 }} whileTap={{ scale: .95 }} onClick={() => { resetForm(); setShowForm(!showForm); }}>
-          {showForm ? <X size={16} /> : <><Plus size={16} /> إضافة كوبون</>}
+        <h3><Tag size={18} /> إدارة الكوبونات والعروض</h3>
+        <motion.button className="btn primary" whileHover={{ scale: 1.05 }} whileTap={{ scale: .95 }}>
+          <Plus size={16} /> إضافة كوبون
         </motion.button>
       </div>
-
-      <AnimatePresence>
-        {showForm && (
-          <motion.div className="adminForm" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: .3 }}>
-            <div className="formGrid">
-              <label><Hash size={14} /> الكود<input value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} placeholder="MOMENTS10" required /></label>
-              <label><DollarSign size={14} /> الخصم<input type="number" min="0" value={form.discount} onChange={e => setForm({ ...form, discount: e.target.value })} required /></label>
-              <label>النوع<select value={form.type} onChange={e => setForm({ ...form, type: e.target.value as 'percent' | 'fixed' })}><option value="percent">نسبة مئوية %</option><option value="fixed">مبلغ ثابت</option></select></label>
-              <label><Tag size={14} /> الحد الأقصى<input type="number" min="0" value={form.maxUsage} onChange={e => setForm({ ...form, maxUsage: e.target.value })} placeholder="100" /></label>
-              <label><DollarSign size={14} /> الحد الأدنى (ج.م)<input type="number" min="0" value={form.minOrder} onChange={e => setForm({ ...form, minOrder: e.target.value })} placeholder="200" /></label>
-              <label><Calendar size={14} /> الانتهاء<input type="date" value={form.expiry} onChange={e => setForm({ ...form, expiry: e.target.value })} /></label>
-              <label className="wide checkboxLabel"><input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} /> <Check size={14} /> نشط</label>
-            </div>
-            <div className="formActions">
-              <motion.button className="btn primary" whileHover={{ scale: 1.03 }} whileTap={{ scale: .97 }} onClick={saveCoupon}><Check size={16} /> {editId ? 'تحديث' : 'إضافة'}</motion.button>
-              <motion.button className="btn ghost" whileTap={{ scale: .97 }} onClick={resetForm}>إلغاء</motion.button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="adminTable">
         <div className="adminTableRow header">
-          <span>الكود</span><span>الخصم</span><span>النوع</span><span>الاستخدام</span><span>الحد الأدنى</span><span>الانتهاء</span><span>الحالة</span><span>إجراءات</span>
+          <span>الكود</span><span>الخصم</span><span>الحد الأدنى</span><span>الاستخدام</span><span>الحالة</span>
         </div>
         {coupons.map(c => (
           <motion.div className="adminTableRow" key={c.id} whileHover={{ backgroundColor: 'var(--paper)' }}>
-            <span><b className="couponCode">{c.code}</b></span>
+            <span><b>{c.code}</b></span>
             <span>{c.type === 'percent' ? `${c.discount}%` : money(c.discount)}</span>
-            <span>{c.type === 'percent' ? 'نسبة' : 'ثابت'}</span>
-            <span>{c.usageCount}/{c.maxUsage}</span>
-            <span>{c.minOrder ? money(c.minOrder) : '---'}</span>
-            <small>{c.expiry || '---'}</small>
-            <span><motion.button className={c.active ? 'toggleBtn active' : 'toggleBtn'} whileTap={{ scale: .9 }} onClick={() => toggleActive(c.id)}>{c.active ? 'نشط' : 'معطل'}</motion.button></span>
-            <span className="rowActions">
-              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: .9 }} onClick={() => startEdit(c)}><Edit3 size={14} /></motion.button>
-              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: .9 }} onClick={() => setDeleteConfirm(c.id)}><Trash2 size={14} /></motion.button>
-            </span>
-            {deleteConfirm === c.id && (
-              <motion.div className="confirmOverlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <span>حذف الكوبون؟</span>
-                <motion.button className="btn danger" whileTap={{ scale: .95 }} onClick={() => deleteCoupon(c.id)}>نعم</motion.button>
-                <motion.button className="btn ghost" whileTap={{ scale: .95 }} onClick={() => setDeleteConfirm(null)}>لا</motion.button>
-              </motion.div>
-            )}
+            <span>{money(c.minOrder)}</span>
+            <span>{c.usageCount} / {c.maxUsage}</span>
+            <span><span className="badge badgeSuccess">نشط</span></span>
           </motion.div>
         ))}
       </div>
@@ -1840,108 +2019,84 @@ function CouponsAdmin({ coupons, setCoupons }: { coupons: Coupon[]; setCoupons: 
   );
 }
 
-function SettingsAdmin({ settings, setSettings }: { settings: any; setSettings: (s: any) => void }) {
-  const [saved, setSaved] = useState(false);
-
-  const save = async () => {
-    if (supabase) await supabase.from('settings').upsert({ key: 'store', value: settings });
-    localStorage.setItem('em-settings', JSON.stringify(settings));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
+function SettingsAdmin({ settings, setSettings }: { settings: any; setSettings: any }) {
   return (
-    <div className="adminPanel settingsPanel">
-      <div className="panelHead"><h3><Settings size={18} /> إعدادات المتجر</h3></div>
-
-      <div className="settingsGroup">
-        <h4><Store size={16} /> معلومات المتجر</h4>
-        <div className="formGrid">
-          <label>اسم المتجر<input value={settings.storeName} onChange={e => setSettings({ ...settings, storeName: e.target.value })} /></label>
-          <label className="wide">وصف المتجر<textarea value={settings.storeDesc} onChange={e => setSettings({ ...settings, storeDesc: e.target.value })} /></label>
-          <label className="wide"><ImageIcon size={14} /> رابط الشعار<input value={settings.logoUrl} onChange={e => setSettings({ ...settings, logoUrl: e.target.value })} placeholder="/images/logo.jpeg" /></label>
-        </div>
+    <div className="adminPanel">
+      <div className="panelHead"><h3><Settings size={18} /> إعدادات المتجر والمنصة</h3></div>
+      <div className="formGrid" style={{ marginTop: 20 }}>
+        <label>اسم المتجر<input className="input" value={settings.storeName} onChange={e => setSettings({ ...settings, storeName: e.target.value })} /></label>
+        <label>رقم هاتف الدفع (InstaPay / Wallet)<input className="input" value={settings.phone} onChange={e => setSettings({ ...settings, phone: e.target.value })} /></label>
+        <label>رسوم الشحن الافتراضية (ج.م)<input className="input" value={settings.shippingFee} onChange={e => setSettings({ ...settings, shippingFee: e.target.value })} /></label>
+        <label>حد الشحن المجاني (ج.م)<input className="input" value={settings.freeShippingThreshold} onChange={e => setSettings({ ...settings, freeShippingThreshold: e.target.value })} /></label>
+        <label className="wide">وصف المتجر<textarea className="textarea" value={settings.storeDesc} onChange={e => setSettings({ ...settings, storeDesc: e.target.value })} /></label>
       </div>
-
-      <div className="settingsGroup">
-        <h4><Truck size={16} /> إعدادات الشحن</h4>
-        <div className="formGrid">
-          <label><DollarSign size={14} /> رسوم الشحن (ج.م)<input type="number" min="0" value={settings.shippingFee} onChange={e => setSettings({ ...settings, shippingFee: e.target.value })} /></label>
-          <label><Gift size={14} /> الشحن المجاني فوق (ج.م)<input type="number" min="0" value={settings.freeShippingThreshold} onChange={e => setSettings({ ...settings, freeShippingThreshold: e.target.value })} /></label>
-        </div>
-      </div>
-
-      <div className="settingsGroup">
-        <h4><Phone size={16} /> معلومات التواصل</h4>
-        <div className="formGrid">
-          <label><MessageCircle size={14} /> واتساب<input value={settings.whatsapp} onChange={e => setSettings({ ...settings, whatsapp: e.target.value })} placeholder="201xxxxxxxxx" /></label>
-          <label><Mail size={14} /> البريد<input type="email" value={settings.email} onChange={e => setSettings({ ...settings, email: e.target.value })} /></label>
-          <label><Phone size={14} /> الهاتف<input value={settings.phone} onChange={e => setSettings({ ...settings, phone: e.target.value })} placeholder="01000000000" /></label>
-        </div>
-      </div>
-
-      <div className="settingsGroup">
-        <h4><Globe size={16} /> وسائل التواصل</h4>
-        <div className="formGrid">
-          <label><Instagram size={14} /> Instagram<input value={settings.instagram} onChange={e => setSettings({ ...settings, instagram: e.target.value })} /></label>
-          <label><Music size={14} /> TikTok<input value={settings.tiktok} onChange={e => setSettings({ ...settings, tiktok: e.target.value })} /></label>
-        </div>
-      </div>
-
-      <div className="formActions">
-        <motion.button className="btn primary" whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: .97 }} onClick={save}>
-          {saved ? <><Check size={16} /> تم الحفظ!</> : <><Send size={16} /> حفظ الإعدادات</>}
-        </motion.button>
-      </div>
+      <motion.button className="btn primary" style={{ marginTop: 24 }} whileHover={{ scale: 1.03 }} whileTap={{ scale: .97 }} onClick={() => alert('تم حفظ الإعدادات بنجاح!')}>
+        حفظ الإعدادات
+      </motion.button>
     </div>
   );
 }
 
-function Footer() {
+function Footer({ t }: { t: typeof translations.ar }) {
   return (
-    <AnimateScroll>
-      <footer className="footer">
-        <div className="footerGrid">
-          <div className="footerBrand">
-            <div className="brand">
-              <span className="brandMark"><img src="/images/logo.jpeg" alt="Esraa Moments" /></span>
-              <span className="brandText"><b>ESRAA</b><small>Moments</small></span>
-            </div>
-            <p>تفاصيل صغيرة… تصنع لحظات لا تُنسى.</p>
-            <p className="footerSub">توزيعات وهدايا مصممة بعناية لكل مناسبة خاصة.</p>
-          </div>
-
-          <div className="footerCol">
-            <b>روابط سريعة</b>
-            <Link to="/shop"><Store size={14} /> المتجر</Link>
-            <Link to="/custom"><Sparkles size={14} /> التخصيص</Link>
-            <Link to="/track"><MapPin size={14} /> تتبع الطلب</Link>
-            <Link to="/login"><LogIn size={14} /> حسابي</Link>
-          </div>
-
-          <div className="footerCol">
-            <b>المناسبات</b>
-            {occasions.map(o => <Link key={o} to={`/shop?cat=${encodeURIComponent(o)}`}>{o}</Link>)}
-          </div>
-
-          <div className="footerCol">
-            <b>تواصل معنا</b>
-            <a href="https://www.instagram.com/esraamomentsstore" target="_blank" rel="noreferrer"><Instagram size={14} /> Instagram</a>
-            <a href="https://www.tiktok.com/@esraamomentsstore" target="_blank" rel="noreferrer"><Music size={14} /> TikTok</a>
-            <a href="https://wa.me/" target="_blank" rel="noreferrer"><MessageCircle size={14} /> WhatsApp</a>
+    <footer className="footer">
+      <div className="container footerGrid">
+        <div className="footerCol">
+          <Link to="/" className="brand footerBrand">
+            <span className="brandMark"><img src="/images/logo.jpeg" alt="Esraa Moments" /></span>
+            <span className="brandText"><b>ESRAA</b><small>Moments</small></span>
+          </Link>
+          <p className="footerDesc">تفاصيل صغيرة تصنع لحظات لا تُنسى. توزيعات وهدايا مخصصة لكل مناسباتك السعيدة في مصر.</p>
+          <div className="socialLinks">
+            <motion.a href="https://instagram.com" target="_blank" rel="noreferrer" whileHover={{ scale: 1.2, color: 'var(--accent)' }} aria-label="Instagram">
+              <Instagram size={20} />
+            </motion.a>
+            <motion.a href="https://whatsapp.com" target="_blank" rel="noreferrer" whileHover={{ scale: 1.2, color: 'var(--accent)' }} aria-label="WhatsApp">
+              <MessageCircle size={20} />
+            </motion.a>
           </div>
         </div>
 
-        <div className="footerBottom">
+        <div className="footerCol">
+          <h4>{t.store}</h4>
+          <ul>
+            {occasions.slice(0, 6).map(o => (
+              <li key={o}><Link to={`/shop?cat=${encodeURIComponent(o)}`}>{o}</Link></li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="footerCol">
+          <h4>روابط سريعة</h4>
+          <ul>
+            <li><Link to="/custom">{t.designStudio}</Link></li>
+            <li><Link to="/track">{t.track}</Link></li>
+            <li><a href="/#about">{t.aboutUs}</a></li>
+            <li><a href="/#faq">{t.faq}</a></li>
+          </ul>
+        </div>
+
+        <div className="footerCol">
+          <h4>التواصل</h4>
+          <p className="footerContactItem"><MapPin size={16} /> القاهرة، مصر</p>
+          <p className="footerContactItem"><Phone size={16} /> 01000000000</p>
+          <p className="footerContactItem"><Mail size={16} /> info@esraamoments.com</p>
+        </div>
+      </div>
+      <div className="footerBottom">
+        <div className="container flex-between">
           <p>© {new Date().getFullYear()} ESRAA Moments. جميع الحقوق محفوظة.</p>
+          <p className="craftedBy">Luxury Custom Event Favors Platform</p>
         </div>
-      </footer>
-    </AnimateScroll>
+      </div>
+    </footer>
   );
 }
 
 createRoot(document.getElementById('root')!).render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
 );
