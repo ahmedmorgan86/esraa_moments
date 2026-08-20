@@ -7,12 +7,11 @@
    1. FONTS & VARIABLES
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=El+Messiri:wght@400;500;600;700&display=swap');
 
 @font-face {
   font-family: 'ElMessiri';
-  src: url('/fonts/ElMessiri-Regular.woff2') format('woff2'),
-       url('/fonts/ElMessiri-Regular.woff') format('woff');
+  src: url('/fonts/ElMessiri-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -20,8 +19,7 @@
 
 @font-face {
   font-family: 'ElMessiri';
-  src: url('/fonts/ElMessiri-Medium.woff2') format('woff2'),
-       url('/fonts/ElMessiri-Medium.woff') format('woff');
+  src: url('/fonts/ElMessiri-Medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -29,8 +27,7 @@
 
 @font-face {
   font-family: 'ElMessiri';
-  src: url('/fonts/ElMessiri-SemiBold.woff2') format('woff2'),
-       url('/fonts/ElMessiri-SemiBold.woff') format('woff');
+  src: url('/fonts/ElMessiri-SemiBold.ttf') format('truetype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -38,8 +35,7 @@
 
 @font-face {
   font-family: 'ElMessiri';
-  src: url('/fonts/ElMessiri-Bold.woff2') format('woff2'),
-       url('/fonts/ElMessiri-Bold.woff') format('woff');
+  src: url('/fonts/ElMessiri-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
