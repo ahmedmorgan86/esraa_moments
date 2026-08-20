@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { supabase } from './lib/supabase';
+import { Analytics } from '@vercel/analytics/react';
 import './styles.css';
 
 type Product = { id: string; name: string; category: string; price: number; stock: number; image: string; desc: string; featured?: boolean; isStartingFrom?: boolean };
@@ -2097,6 +2098,7 @@ createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
+      <Analytics />
     </BrowserRouter>
   </React.StrictMode>
 );
