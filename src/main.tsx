@@ -37,25 +37,25 @@ const ease=[.25,.46,.45,.94] as const;
 
 function Animate({children, delay=0, className='', ...props}:any){
   const ref=useRef(null);
-  const inView=useInView(ref,{once:true,margin:'-60px'});
-  return <motion.div ref={ref} initial={{opacity:0,y:40}} animate={inView?{opacity:1,y:0}:{opacity:0,y:40}} transition={{duration:.7,delay,ease}} className={className} {...props}>{children}</motion.div>;
+  const inView=useInView(ref,{once:true,margin:'-80px'});
+  return <motion.div ref={ref} initial={{opacity:0,y:50,filter:'blur(8px)'}} animate={inView?{opacity:1,y:0,filter:'blur(0px)'}:{opacity:0,y:50,filter:'blur(8px)'}} transition={{duration:.8,delay,ease:[.22,1,.36,1]}} className={className} {...props}>{children}</motion.div>;
 }
 
 function AnimateScale({children, delay=0, className='', ...props}:any){
   const ref=useRef(null);
   const inView=useInView(ref,{once:true,margin:'-40px'});
-  return <motion.div ref={ref} initial={{opacity:0,scale:.9}} animate={inView?{opacity:1,scale:1}:{opacity:0,scale:.9}} transition={{duration:.6,delay,ease}} className={className} {...props}>{children}</motion.div>;
+  return <motion.div ref={ref} initial={{opacity:0,scale:.85,rotate:-2}} animate={inView?{opacity:1,scale:1,rotate:0}:{opacity:0,scale:.85,rotate:-2}} transition={{duration:.7,delay,ease:[.22,1,.36,1]}} className={className} {...props}>{children}</motion.div>;
 }
 
 function StaggerContainer({children, className='', ...props}:any){
-  return <motion.div initial="hidden" whileInView="visible" viewport={{once:true,margin:'-60px'}} variants={{visible:{transition:{staggerChildren:.12}}}} className={className} {...props}>{children}</motion.div>;
+  return <motion.div initial="hidden" whileInView="visible" viewport={{once:true,margin:'-60px'}} variants={{visible:{transition:{staggerChildren:.15,delayChildren:.1}}}} className={className} {...props}>{children}</motion.div>;
 }
 
 function StaggerItem({children, className='', ...props}:any){
-  return <motion.div variants={{hidden:{opacity:0,y:30},visible:{opacity:1,y:0,transition:{duration:.5,ease}}}} className={className} {...props}>{children}</motion.div>;
+  return <motion.div variants={{hidden:{opacity:0,y:40,scale:.96},visible:{opacity:1,y:0,scale:1,transition:{duration:.6,ease:[.22,1,.36,1]}}}} className={className} {...props}>{children}</motion.div>;
 }
 
-const pageVariants={initial:{opacity:0,y:20},animate:{opacity:1,y:0,transition:{duration:.5,ease:[.25,.46,.45,.94] as [number,number,number,number]}},exit:{opacity:0,y:-20,transition:{duration:.3}}};
+const pageVariants={initial:{opacity:0,y:30,filter:'blur(6px)'},animate:{opacity:1,y:0,filter:'blur(0px)',transition:{duration:.6,ease:[.22,1,.36,1]}},exit:{opacity:0,y:-20,filter:'blur(4px)',transition:{duration:.35,ease:[.22,1,.36,1]}}};
 
 function useProducts(){
   const [items,setItems]=useState<Product[]>(seed);
@@ -134,21 +134,21 @@ function Home({products,add,wish,setWish}:{products:Product[];add:(p:Product)=>v
     <>
       <section className="hero">
         <div className="heroCopy">
-          <motion.span className="eyebrow" initial={{opacity:0,x:30}} animate={{opacity:1,x:0}} transition={{duration:.7,delay:.2}}>HANDCRAFTED • PERSONALIZED • TIMELESS</motion.span>
-          <motion.h1 initial={{opacity:0,y:40}} animate={{opacity:1,y:0}} transition={{duration:.8,delay:.4}}>تفاصيل صغيرة…<br/><em>تصنع لحظات</em> لا تُنسى.</motion.h1>
-          <motion.p initial={{opacity:0,y:30}} animate={{opacity:1,y:0}} transition={{duration:.7,delay:.6}}>توزيعات وهدايا مصممة بعناية لكل مناسبة، من أول فكرة حتى آخر تفصيلة.</motion.p>
-          <motion.div className="cta" initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:.6,delay:.8}}>
-            <motion.div whileHover={{y:-4}} whileTap={{scale:.96}}>
+          <motion.span className="eyebrow" initial={{opacity:0,x:40,filter:'blur(10px)'}} animate={{opacity:1,x:0,filter:'blur(0px)'}} transition={{duration:.8,delay:.3,ease:[.22,1,.36,1]}}>HANDCRAFTED • PERSONALIZED • TIMELESS</motion.span>
+          <motion.h1 initial={{opacity:0,y:50,filter:'blur(10px)'}} animate={{opacity:1,y:0,filter:'blur(0px)'}} transition={{duration:1,delay:.5,ease:[.22,1,.36,1]}}>تفاصيل صغيرة…<br/><em>تصنع لحظات</em> لا تُنسى.</motion.h1>
+          <motion.p initial={{opacity:0,y:30}} animate={{opacity:1,y:0}} transition={{duration:.8,delay:.7,ease:[.22,1,.36,1]}}>توزيعات وهدايا مصممة بعناية لكل مناسبة، من أول فكرة حتى آخر تفصيلة.</motion.p>
+          <motion.div className="cta" initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:.7,delay:.9,ease:[.22,1,.36,1]}}>
+            <motion.div whileHover={{y:-5,boxShadow:'0 12px 35px rgba(196,115,106,.3)'}} whileTap={{scale:.95}}>
               <Link className="btn primary" to="/shop">اكتشفي التوزيعات <ArrowLeft/></Link>
             </motion.div>
-            <motion.div whileHover={{y:-4}} whileTap={{scale:.96}}>
+            <motion.div whileHover={{y:-5,boxShadow:'0 12px 35px rgba(26,21,18,.12)'}} whileTap={{scale:.95}}>
               <Link className="btn ghost" to="/custom">صممي توزيعتك <Sparkles/></Link>
             </motion.div>
           </motion.div>
         </div>
         <div className="heroImage">
-          <motion.img src={hero} initial={{scale:1.2,opacity:0}} animate={{scale:1,opacity:1}} transition={{duration:1.2,delay:.3}}/>
-          <motion.div className="floating" initial={{opacity:0,y:30}} animate={{opacity:1,y:0}} transition={{duration:.8,delay:1}} whileHover={{y:-5}}>مصنوعة بحب<br/><small>For your moments</small></motion.div>
+          <motion.img src={hero} initial={{scale:1.25,opacity:0,filter:'saturate(0) brightness(1.2)'}} animate={{scale:1,opacity:1,filter:'saturate(.9) brightness(1)'}} transition={{duration:1.4,delay:.2,ease:[.22,1,.36,1]}}/>
+          <motion.div className="floating" initial={{opacity:0,y:40,backdropFilter:'blur(0px)'}} animate={{opacity:1,y:0,backdropFilter:'blur(20px)'}} transition={{duration:1,delay:1.1,ease:[.22,1,.36,1]}} whileHover={{y:-6,boxShadow:'0 25px 60px rgba(0,0,0,.12)'}}>مصنوعة بحب<br/><small>For your moments</small></motion.div>
         </div>
       </section>
 
