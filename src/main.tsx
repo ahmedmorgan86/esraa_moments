@@ -1338,9 +1338,8 @@ function CheckoutPage({ cart, setCart, cartTotal, t }: { cart: CartItem[]; setCa
             <div className="paymentSection">
               <p className="paymentTitle"><CreditCard size={16} /> طريقة الدفع المفضلة (تتم بعد تأكيد السعر والشحن)</p>
               {([
-                { key: 'instapay', label: 'إنستاباي / محفظة إلكترونية', icon: <DollarSign size={16} /> },
-                { key: 'cod', label: 'الدفع عند الاستلام', icon: <Truck size={16} /> },
-                { key: 'card', label: 'بطاقة ائتمانية', icon: <CreditCard size={16} /> }
+                { key: 'instapay', label: 'إنستاباي (InstaPay)', icon: <DollarSign size={16} /> },
+                { key: 'wallet', label: 'محفظة إلكترونية (Mobile Wallet)', icon: <CreditCard size={16} /> }
               ] as const).map(opt => (
                 <motion.button
                   key={opt.key}
