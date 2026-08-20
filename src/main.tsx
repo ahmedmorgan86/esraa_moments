@@ -396,70 +396,68 @@ function Header({
   const scrolled = useScrollShadow();
   return (
     <motion.header
-      className={`header ${scrolled ? 'headerScrolled' : ''}`}
+      className={`header ${scrolled ? 'scrolled' : ''}`}
       initial={{ y: -82 }}
       animate={{ y: 0 }}
       transition={{ duration: .6, ease }}
     >
-      <button className="icon mobileOnly" onClick={() => setMenu(!menu)} aria-label="Menu">
-        <motion.div whileTap={{ rotate: 90 }} transition={{ duration: .2 }}>
-          {menu ? <X size={22} /> : <Menu size={22} />}
-        </motion.div>
-      </button>
+      <div className="header-inner">
+        <button className="nav-mobile-toggle mobileOnly" onClick={() => setMenu(!menu)} aria-label="Menu">
+          <span></span>
+        </button>
 
-      <Link to="/" className="brand">
-        <motion.span className="brandMark" whileHover={{ scale: 1.08 }} transition={{ duration: .4 }}>
-          <img src="/images/logo.jpeg" alt="Esraa Moments" />
-        </motion.span>
-        <span className="brandText"><b>ESRAA</b><small>Moments</small></span>
-      </Link>
+        <Link to="/" className="brand">
+          <motion.img src="/images/logo.jpeg" alt="Esraa Moments" className="brand-logo" whileHover={{ scale: 1.08 }} transition={{ duration: .4 }} />
+          <span className="brand-text"><b>ESRAA</b> <small>Moments</small></span>
+        </Link>
 
-      <nav className={menu ? 'nav open' : 'nav'}>
-        <Link to="/shop" onClick={() => setMenu(false)}>{t.store}</Link>
-        <Link to="/custom" onClick={() => setMenu(false)}>{t.designStudio}</Link>
-        <a href="/#about" onClick={() => setMenu(false)}>{t.aboutUs}</a>
-        <a href="/#faq" onClick={() => setMenu(false)}>{t.faq}</a>
-        <Link to="/track" onClick={() => setMenu(false)}>{t.track}</Link>
-      </nav>
+        <nav className={`nav-desktop ${menu ? 'mobile-active' : ''}`}>
+          <Link to="/shop" className="nav-link" onClick={() => setMenu(false)}>{t.store}</Link>
+          <Link to="/custom" className="nav-link" onClick={() => setMenu(false)}>{t.designStudio}</Link>
+          <a href="/#about" className="nav-link" onClick={() => setMenu(false)}>{t.aboutUs}</a>
+          <a href="/#faq" className="nav-link" onClick={() => setMenu(false)}>{t.faq}</a>
+          <Link to="/track" className="nav-link" onClick={() => setMenu(false)}>{t.track}</Link>
+        </nav>
 
-      <div className="headerActions">
-        <motion.button
-          className="langToggleBtn"
-          onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: .95 }}
-          title="Switch Language"
-        >
-          <Globe size={16} /> <span>{lang === 'ar' ? 'EN' : 'العربية'}</span>
-        </motion.button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <motion.button
+            className="header-btn"
+            onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: .95 }}
+            title="Switch Language"
+          >
+            <Globe size={18} />
+          </motion.button>
 
-        <motion.button
-          className="icon"
-          onClick={() => setDark(!dark)}
-          whileHover={{ rotate: 180, scale: 1.1 }}
-          whileTap={{ scale: .9 }}
-          transition={{ duration: .4 }}
-          aria-label="Toggle Theme"
-        >
-          {dark ? <Sun size={20} /> : <Moon size={20} />}
-        </motion.button>
+          <motion.button
+            className="header-btn"
+            onClick={() => setDark(!dark)}
+            whileHover={{ rotate: 180, scale: 1.1 }}
+            whileTap={{ scale: .9 }}
+            transition={{ duration: .4 }}
+            aria-label="Toggle Theme"
+          >
+            {dark ? <Sun size={18} /> : <Moon size={18} />}
+          </motion.button>
 
-        <motion.button className="icon cartTrigger" onClick={onCartClick} whileHover={{ scale: 1.15 }} whileTap={{ scale: .9 }} aria-label="Cart">
-          <ShoppingBag size={20} />
-          <AnimatePresence>
-            {cartCount > 0 && (
-              <motion.i
-                className="cartBadge"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 15 }}
-              >
-                {cartCount}
-              </motion.i>
-            )}
-          </AnimatePresence>
-        </motion.button>
+          <motion.button className="header-btn" onClick={onCartClick} whileHover={{ scale: 1.15 }} whileTap={{ scale: .9 }} aria-label="Cart">
+            <ShoppingBag size={18} />
+            <AnimatePresence>
+              {cartCount > 0 && (
+                <motion.i
+                  className="count"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                >
+                  {cartCount}
+                </motion.i>
+              )}
+            </AnimatePresence>
+          </motion.button>
+        </div>
       </div>
     </motion.header>
   );
