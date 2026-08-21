@@ -2964,3 +2964,91 @@ footer {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 .stepContent { min-height: 380px; }
+
+/* ── Directional icons: flip in LTR so arrows point forward ── */
+[dir="ltr"] .flip-x { transform: scaleX(-1); }
+
+/* ── English typography refinement ── */
+.lang-en body, [lang="en"] .heroCopy h1 { letter-spacing: -0.01em; }
+
+/* ════════════════════════════════════════════════════════════
+   DESIGN POLISH v3 — full visual refresh layer
+   Token-based, additive, safe with existing rules
+   ════════════════════════════════════════════════════════════ */
+
+html { scroll-behavior: smooth; }
+::selection { background: var(--accent); color: #fff; }
+
+/* Hero: warm gradient wash + soft glow behind image */
+.hero { position: relative; overflow: hidden; }
+.hero::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(60% 50% at 85% 15%, var(--accent-glow), transparent 70%),
+    radial-gradient(40% 40% at 10% 90%, rgba(196, 115, 106, 0.08), transparent 70%);
+}
+.hero > * { position: relative; z-index: 1; }
+.heroImage::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to top, rgba(10,10,10,0.18), transparent 45%);
+}
+
+/* Product cards: lift + image zoom + accent ring on hover */
+.productCard:hover {
+  transform: translateY(-6px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-3);
+}
+.productCard .cardImage, .productCard img:first-child { transition: transform .5s ease; }
+.productCard:hover .cardImage img, .productCard:hover img:first-child { transform: scale(1.05); }
+
+/* Buttons: gradient primary + tactile press */
+.btn.primary {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+.btn.primary:hover { box-shadow: 0 6px 20px var(--accent-glow); filter: brightness(1.04); }
+.btn:active { transform: scale(.97); }
+
+/* Section heads: accent eyebrow + tighter rhythm */
+.eyebrow { color: var(--accent); letter-spacing: .12em; font-weight: 700; }
+
+/* Filter pills: smoother active state */
+.pill { transition: all .25s ease; }
+.pill:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+.pill.active { background: linear-gradient(135deg, var(--ink), var(--ink-soft)); }
+
+/* Occasion cards: hover accent */
+.occasionCard { transition: all .3s ease; }
+.occasionCard:hover { border-color: var(--accent); background: var(--accent-light); transform: translateY(-2px); }
+
+/* Stat cards: hover lift + accent top line */
+.statCard { position: relative; overflow: hidden; }
+.statCard::before {
+  content: ''; position: absolute; top: 0; inset-inline-start: 0; width: 3px; height: 100%;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+  opacity: 0; transition: opacity .3s ease;
+}
+.statCard:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); border-color: var(--accent-light); }
+.statCard:hover::before { opacity: 1; }
+
+/* Admin sidebar: refined active tab */
+.adminSidebar button.active, .adminSidebar a.active {
+  background: var(--accent-light); color: var(--accent); font-weight: 700;
+  border-inline-start: 3px solid var(--accent);
+}
+
+/* Cart drawer items: subtle divider polish */
+.cartDrawer .cartItem + .cartItem { border-top: 1px dashed var(--border); }
+
+/* Modals: entrance depth */
+.modalCard { box-shadow: var(--shadow-4); border: 1px solid var(--border-light); }
+
+/* Tables (admin): zebra rows */
+.adminTableRow:nth-child(even):not(.header) { background: color-mix(in srgb, var(--paper, var(--bg)) 60%, transparent); }
+
+/* Focus visibility for accessibility */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* English mode: latin font for headings */
+[lang="en"] h1, [lang="en"] h2, [lang="en"] h3, html[lang="en"] body { font-family: var(--font-latin), var(--font); }
