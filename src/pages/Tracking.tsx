@@ -76,7 +76,7 @@ export function TrackingPage({ t }: { t: typeof translations.ar }) {
   return (
     <motion.section className="section page" {...pageVariants}>
       <div className="sectionHead">
-        <AnimateScroll><div><span className="eyebrow">ORDER TRACKING & PAYMENT</span><h2>{t.trackTitle}</h2></div></AnimateScroll>
+        <AnimateScroll><div><span className="eyebrow">{t.ebTrackPay}</span><h2>{t.trackTitle}</h2></div></AnimateScroll>
       </div>
       <div className="trackingPage">
         <AnimateScroll>

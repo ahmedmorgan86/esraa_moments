@@ -50,6 +50,7 @@ function App() {
       localStorage.setItem('em-settings', JSON.stringify({
         shippingFee: '25', freeShippingThreshold: '500',
         phone: '01097905455', whatsapp: '201097905455',
+        email: 'esraamomentsstore@gmail.com',
         instagram: 'https://www.instagram.com/esraamomentsstore',
         tiktok: 'https://www.tiktok.com/@esraamomentsstore'
       }));
