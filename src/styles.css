@@ -7,39 +7,7 @@
    1. FONTS & VARIABLES
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=El+Messiri:wght@400;500;600;700&display=swap');
-
-@font-face {
-  font-family: 'ElMessiri';
-  src: url('/fonts/ElMessiri-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'ElMessiri';
-  src: url('/fonts/ElMessiri-Medium.ttf') format('truetype');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'ElMessiri';
-  src: url('/fonts/ElMessiri-SemiBold.ttf') format('truetype');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'ElMessiri';
-  src: url('/fonts/ElMessiri-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
 
 :root {
   /* Colors — Core */
@@ -81,8 +49,8 @@
   --radius-pill: 999px;
 
   /* Typography */
-  --font: 'ElMessiri', 'Cairo', 'Segoe UI', Tahoma, sans-serif;
-  --font-latin: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  --font-latin: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
 }
 
 /* Dark Theme */
@@ -3345,3 +3313,12 @@ html { scroll-behavior: smooth; }
 .custError svg { flex-shrink: 0; margin-top: 2px; }
 .custError b { display: block; margin-bottom: 4px; }
 .custError ul { margin: 0; padding-inline-start: 18px; }
+
+/* ── NEWSLETTER CONTRAST FIX v7 ── */
+.newsletter { color: var(--ink); }
+:root:not([data-theme="dark"]) .newsletter {
+  background: linear-gradient(150deg, #2b211b 0%, #241c15 55%, #1d1610 100%);
+  color: #f3ede4;
+}
+:root:not([data-theme="dark"]) .newsletter .eyebrow { color: #cfa678; }
+:root:not([data-theme="dark"]) .newsletterInner p { color: rgba(243, 237, 228, .78); }
