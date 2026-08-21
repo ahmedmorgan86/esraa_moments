@@ -145,7 +145,7 @@ const translations = {
     colors: ['آيفوري وذهبي', 'وردي ذهبي', 'أبيض وفضي', 'كحلي وذهبي'],
     printedName: 'الاسم المطبوع', namePlaceholder: 'مثال: مريم & أحمد',
     dateLabel: 'التاريخ', extraNotes: 'ملاحظات إضافية', extrasPlaceholder: 'أي تفاصيل إضافية…',
-    previewNamePh: 'اسم مناسبتك', previewDatePh: 'تاريخ المناسبة',
+    previewNamePh: 'اسم مناسبتك', previewDatePh: 'تاريخ المناسبة', previewHint: 'المعاينة بتتحدث لحظياً مع كل اختيار',
     sOccasion: 'المناسبة', sType: 'التوزيعة', sQty: 'الكمية', sColor: 'اللون', sName: 'الاسم', sDate: 'التاريخ', sNotes: 'ملاحظات',
     piecesWord: 'قطعة',
     prevBtn: 'السابق', nextBtn: 'التالي', sendDesign: 'إرسال الطلب',
@@ -335,7 +335,7 @@ const translations = {
     colors: ['Ivory & Gold', 'Rose Gold', 'White & Silver', 'Navy & Gold'],
     printedName: 'Printed Name', namePlaceholder: 'e.g. Mariam & Ahmed',
     dateLabel: 'Date', extraNotes: 'Additional Notes', extrasPlaceholder: 'Any extra details…',
-    previewNamePh: 'Your Occasion Name', previewDatePh: 'Event Date',
+    previewNamePh: 'Your Occasion Name', previewDatePh: 'Event Date', previewHint: 'The preview updates live with every choice',
     sOccasion: 'Occasion', sType: 'Favor', sQty: 'Quantity', sColor: 'Color', sName: 'Name', sDate: 'Date', sNotes: 'Notes',
     piecesWord: 'pcs',
     prevBtn: 'Back', nextBtn: 'Next', sendDesign: 'Submit Request',
@@ -560,10 +560,10 @@ function useProducts() {
     let active = true;
     (async () => {
       if (!supabase) return;
-      const { data } = await supabase.from('products').select('id,name,price,stock,image_url,description,categories(name)').eq('is_active', true);
+      const { data } = await supabase.from('products').select('id,name,price,stock,image_url,description,is_featured,categories(name)').eq('is_active', true);
       if (active && data?.length) setItems(data.map((p: any) => ({
         id: p.id, name: p.name, category: p.categories?.name || 'مناسبات خاصة',
-        price: Number(p.price), stock: p.stock, image: p.image_url || seed[0].image, desc: p.description || ''
+        price: Number(p.price), stock: p.stock, image: p.image_url || seed[0].image, desc: p.description || '', featured: !!p.is_featured
       })));
     })();
     return () => { active = false };
@@ -822,9 +822,9 @@ function CartDrawer({
                         exit={{ opacity: 0, x: -30, height: 0, marginBottom: 0, padding: 0 }}
                         transition={{ duration: .3, ease }}
                       >
-                        <img src={item.image} alt={item.name} className="cartDrawerImg" />
+                        <img src={item.image} alt={prodName(item)} className="cartDrawerImg" />
                         <div className="cartDrawerInfo">
-                          <Link to={`/product/${item.id}`} onClick={onClose}>{item.name}</Link>
+                          <Link to={`/product/${item.id}`} onClick={onClose}>{prodName(item)}</Link>
                           <span className="cartDrawerPrice">{money(item.price)}</span>
                           <div className="qtyControls">
                             <motion.button whileTap={{ scale: .8 }} onClick={() => changeQty(item.id, -1)}><Minus size={14} /></motion.button>
@@ -1177,6 +1177,8 @@ function ShopPage({ products, addToCart, wish, setWish, t }: { products: Product
   const [cat, setCat] = useState(new URLSearchParams(location.search).get('cat') || '');
   const [sort, setSort] = useState('');
 
+  useEffect(() => { setCat(new URLSearchParams(location.search).get('cat') || ''); }, [location.search]);
+
   const filtered = useMemo(() => {
     let items = products.filter(p => (!cat || p.category === cat) && (p.name + p.category + p.desc + (p.name_en || '') + (p.desc_en || '')).toLowerCase().includes(q.toLowerCase()));
     if (sort === 'priceLow') items = [...items].sort((a, b) => a.price - b.price);
@@ -1363,34 +1365,22 @@ function ProductPage({ products, addToCart, wish, setWish, t }: { products: Prod
   );
 }
 
-function Choice({ title, values, value, onChange, labelFn }: { title: string; values: string[]; value: string; onChange: (v: string) => void; labelFn?: (v: string) => string }) {
-  const show = (v: string) => (labelFn ? labelFn(v) : v);
-  return (
-    <div className="choiceGroup">
-      <h3>{title}</h3>
-      <div className="choiceGrid">
-        {values.map(v => (
-          <motion.button
-            key={v}
-            className={v === value ? 'choiceBtn selected' : 'choiceBtn'}
-            onClick={() => onChange(v)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: .98 }}
-            animate={v === value ? { backgroundColor: 'var(--ink)', color: 'var(--bg)' } : {}}
-          >
-            {show(v)}
-          </motion.button>
-        ))}
-      </div>
-    </div>
-  );
-}
+const PALETTES: Record<string, { bg: string; deep: string; soft: string }> = {
+  'آيفوري وذهبي': { bg: '#fdfaf3', deep: '#a97c50', soft: '#efe2cb' },
+  'وردي ذهبي': { bg: '#fdf3f1', deep: '#b96a60', soft: '#f4d9d3' },
+  'أبيض وفضي': { bg: '#f9fafb', deep: '#8b95a1', soft: '#dfe3e8' },
+  'كحلي وذهبي': { bg: '#eff2f8', deep: '#33415e', soft: '#d5dcec' }
+};
+const TYPE_ICONS: Record<string, any> = { 'علبة': Box, 'برطمان': Package, 'كيس فاخر': ShoppingBag, 'بوكس هدية': Gift };
 
 function Customizer({ t }: { t: typeof translations.ar }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Design>({ occasion: 'زفاف', type: 'علبة', qty: 30, color: 'آيفوري وذهبي', name: '', date: '', extras: '' });
   const [sent, setSent] = useState(false);
   const steps = ['المناسبة', 'التوزيعة', 'التفاصيل', 'المراجعة'];
+  const pal = PALETTES[form.color] || PALETTES['آيفوري وذهبي'];
+  const TypeIcon = TYPE_ICONS[form.type] || Gift;
+  const monogram = (form.name.trim()[0] || 'E').toUpperCase();
 
   const submit = async () => {
     if (supabase) {
@@ -1408,113 +1398,137 @@ function Customizer({ t }: { t: typeof translations.ar }) {
 
   return (
     <motion.section className="section page customPage" {...pageVariants}>
-      <div className="customHeader">
-        <AnimateScroll>
+      <div className="studioHero">
+        <span className="studioGlow g1" /><span className="studioGlow g2" /><span className="studioGlow g3" />
+        <AnimateScroll className="studioHeroInner">
           <span className="eyebrow">BESPOKE STUDIO</span>
-          <h2>{t.custTitle}<br /><em>{t.custTitleAccent}</em></h2>
+          <h1>{t.custTitle} <em>{t.custTitleAccent}</em></h1>
           <p>{t.custSub}</p>
         </AnimateScroll>
-        <div className="progressBar">
-          {t.custSteps.map((s, i) => (
-            <motion.span
-              key={s}
-              className={i === step ? 'progressStep active' : i < step ? 'progressStep done' : 'progressStep'}
-              animate={i === step ? { scale: [1, 1.08, 1] } : {}}
-              transition={{ duration: .4 }}
-            >
-              <i>{i < step ? <Check size={12} /> : i + 1}</i>{s}
-            </motion.span>
-          ))}
-          <div className="progressLine">
-            <motion.div className="progressFill" animate={{ width: `${(step / (steps.length - 1)) * 100}%` }} transition={{ duration: .4, ease }} />
-          </div>
-        </div>
       </div>
 
-      <div className="customBody">
-        <div className="customPreview">
-          <AnimateScale>
-            <div className="previewCard">
-              <span>ESRAA</span>
-              <motion.b key={form.name} initial={{ opacity: 0, scale: .8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: .4 }}>
-                {form.name || t.previewNamePh}
-              </motion.b>
+      <div className="studioBody">
+        <div className="studioPreviewCol">
+          <motion.div
+            className="favorBox"
+            style={{ '--pvBg': pal.bg, '--pvDeep': pal.deep, '--pvSoft': pal.soft } as React.CSSProperties}
+            animate={{ y: [0, -10, 0] }}
+            transition={{ repeat: Infinity, duration: 5.5, ease: 'easeInOut' }}
+          >
+            <span className="ribbonV" /><span className="ribbonH" />
+            <motion.span key={monogram + form.name} className="monogram" initial={{ scale: .5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 18 }}>{monogram}</motion.span>
+            <div className="favorText">
+              <motion.b key={form.name} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .35 }}>{form.name || t.previewNamePh}</motion.b>
               <small>{form.date || t.previewDatePh}</small>
-              <div className="previewCardMeta">{pickLabel(form.type, favorTypeEn)} • {pickLabel(form.color, colorEn)}</div>
             </div>
-          </AnimateScale>
+            <div className="favorMeta"><TypeIcon size={13} /> {pickLabel(form.type, favorTypeEn)}<i>•</i>{pickLabel(form.color, colorEn)}</div>
+            <div className="swatchRow">
+              {Object.keys(PALETTES).map(c => (
+                <button key={c} type="button" title={pickLabel(c, colorEn)} className={c === form.color ? 'swatch on' : 'swatch'} style={{ background: PALETTES[c].deep }} onClick={() => setForm({ ...form, color: c })} />
+              ))}
+            </div>
+          </motion.div>
+          <p className="previewHint"><Sparkles size={14} /> {t.previewHint}</p>
         </div>
 
-        <div className="customForm">
-          <span className="stepTitle">{t.stepWord} {step + 1} {t.ofWord} 4</span>
+        <div className="studioFormCol">
+          <div className="stepPills">
+            {t.custSteps.map((s, i) => (
+              <button key={s} type="button" className={i === step ? 'on' : i < step ? 'done' : ''} disabled={i > step} onClick={() => setStep(i)}>
+                <i>{i < step ? <Check size={11} /> : i + 1}</i>
+                <span>{s}</span>
+              </button>
+            ))}
+          </div>
 
-          {sent ? (
-            <motion.div className="successBlock" initial={{ opacity: 0, scale: .8 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 300 }}>
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}>
-                <Check size={48} />
+          <div className="studioCard">
+            {sent ? (
+              <motion.div className="successBlock" initial={{ opacity: 0, scale: .85 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 260 }}>
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, delay: .1 }}>
+                  <Check size={44} />
+                </motion.div>
+                <h3>{t.designReceivedT}</h3>
+                <p>{t.designReceivedP}</p>
+                <Link className="btn primary" to="/shop">{t.exploreProducts}</Link>
               </motion.div>
-              <h3>{t.designReceivedT}</h3>
-              <p>{t.designReceivedP}</p>
-              <Link className="btn primary" to="/shop">{t.exploreProducts}</Link>
-            </motion.div>
-          ) : (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -30 }}
-                transition={{ duration: .3, ease }}
-                className="stepContent"
-              >
-                {step === 0 && (
-                  <Choice title={t.chooseOccasion} values={occasions} value={form.occasion} onChange={v => setForm({ ...form, occasion: v })} labelFn={occLabel} />
-                )}
-                {step === 1 && (
-                  <Choice title={t.favorType} values={['علبة', 'برطمان', 'كيس فاخر', 'بوكس هدية']} value={form.type} onChange={v => setForm({ ...form, type: v })} labelFn={v => pickLabel(v, favorTypeEn)} />
-                )}
-                {step === 2 && (
-                  <div className="formGrid">
-                    <label>{t.qty}<input type="number" min="1" value={form.qty} onChange={e => setForm({ ...form, qty: +e.target.value })} /></label>
-                    <label>{t.sColor}<select value={form.color} onChange={e => setForm({ ...form, color: e.target.value })}>{['آيفوري وذهبي', 'وردي ذهبي', 'أبيض وفضي', 'كحلي وذهبي'].map(c => <option key={c} value={c}>{pickLabel(c, colorEn)}</option>)}</select></label>
-                    <label className="wide">{t.printedName}<input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={t.namePlaceholder} /></label>
-                    <label className="wide">{t.dateLabel}<input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></label>
-                    <label className="wide">{t.extraNotes}<textarea value={form.extras} onChange={e => setForm({ ...form, extras: e.target.value })} placeholder={t.extrasPlaceholder} /></label>
-                  </div>
-                )}
-                {step === 3 && (
-                  <div className="summaryReview">
-                    <div className="summaryRow"><span>{t.sOccasion}</span><b>{occLabel(form.occasion)}</b></div>
-                    <div className="summaryRow"><span>{t.sType}</span><b>{pickLabel(form.type, favorTypeEn)}</b></div>
-                    <div className="summaryRow"><span>{t.sQty}</span><b>{form.qty} {t.piecesWord}</b></div>
-                    <div className="summaryRow"><span>{t.sColor}</span><b>{pickLabel(form.color, colorEn)}</b></div>
-                    <div className="summaryRow"><span>{t.sName}</span><b>{form.name || '---'}</b></div>
-                    <div className="summaryRow"><span>{t.sDate}</span><b>{form.date || '---'}</b></div>
-                    {form.extras && <div className="summaryRow"><span>{t.sNotes}</span><b>{form.extras}</b></div>}
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-          )}
+            ) : (
+              <>
+                <span className="stepTitle">{t.stepWord} {step + 1} {t.ofWord} 4 — {t.custSteps[step]}</span>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={step}
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -30 }}
+                    transition={{ duration: .28, ease }}
+                    className="stepContent"
+                  >
+                    {step === 0 && (
+                      <div className="occGrid">
+                        {occasions.map((o, i) => (
+                          <button key={o} type="button" className={form.occasion === o ? 'occCard on' : 'occCard'} onClick={() => setForm({ ...form, occasion: o })}>
+                            <span className="occIdx">{String(i + 1).padStart(2, '0')}</span>
+                            <b>{occLabel(o)}</b>
+                            <ArrowLeft size={15} className="flip-x occArrow" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {step === 1 && (
+                      <div className="typeGrid">
+                        {['علبة', 'برطمان', 'كيس فاخر', 'بوكس هدية'].map(ty => {
+                          const I = TYPE_ICONS[ty] || Gift;
+                          return (
+                            <button key={ty} type="button" className={form.type === ty ? 'typeCard on' : 'typeCard'} onClick={() => setForm({ ...form, type: ty })}>
+                              <I size={24} strokeWidth={1.6} />
+                              <b>{pickLabel(ty, favorTypeEn)}</b>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {step === 2 && (
+                      <div className="formGrid">
+                        <label>{t.qty}<input type="number" min="1" value={form.qty} onChange={e => setForm({ ...form, qty: Math.max(1, +e.target.value || 1) })} /></label>
+                        <label>{t.sColor}<select value={form.color} onChange={e => setForm({ ...form, color: e.target.value })}>{Object.keys(PALETTES).map(c => <option key={c} value={c}>{pickLabel(c, colorEn)}</option>)}</select></label>
+                        <label className="wide">{t.printedName}<input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={t.namePlaceholder} /></label>
+                        <label className="wide">{t.dateLabel}<input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></label>
+                        <label className="wide">{t.extraNotes}<textarea value={form.extras} onChange={e => setForm({ ...form, extras: e.target.value })} placeholder={t.extrasPlaceholder} /></label>
+                      </div>
+                    )}
+                    {step === 3 && (
+                      <div className="summaryReview">
+                        <div className="summaryRow link" onClick={() => setStep(0)}><span>{t.sOccasion}</span><b>{occLabel(form.occasion)}</b><Edit3 size={13} /></div>
+                        <div className="summaryRow link" onClick={() => setStep(1)}><span>{t.sType}</span><b>{pickLabel(form.type, favorTypeEn)}</b><Edit3 size={13} /></div>
+                        <div className="summaryRow link" onClick={() => setStep(2)}><span>{t.sQty}</span><b>{form.qty} {t.piecesWord}</b><Edit3 size={13} /></div>
+                        <div className="summaryRow link" onClick={() => setStep(2)}><span>{t.sColor}</span><b>{pickLabel(form.color, colorEn)}</b><Edit3 size={13} /></div>
+                        <div className="summaryRow link" onClick={() => setStep(2)}><span>{t.sName}</span><b>{form.name || '---'}</b><Edit3 size={13} /></div>
+                        <div className="summaryRow link" onClick={() => setStep(2)}><span>{t.sDate}</span><b>{form.date || '---'}</b><Edit3 size={13} /></div>
+                        {form.extras && <div className="summaryRow link" onClick={() => setStep(2)}><span>{t.sNotes}</span><b>{form.extras}</b><Edit3 size={13} /></div>}
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
 
-          {!sent && (
-            <div className="stepNav">
-              {step > 0 && (
-                <motion.button className="btn ghost" whileTap={{ scale: .95 }} onClick={() => setStep(step - 1)}>
-                  <ArrowRight size={16} className="flip-x" /> {t.prevBtn}
-                </motion.button>
-              )}
-              {step < steps.length - 1 ? (
-                <motion.button className="btn primary" whileHover={{ y: -2 }} whileTap={{ scale: .95 }} onClick={() => setStep(step + 1)}>
-                  {t.nextBtn} <ArrowLeft size={16} className="flip-x" />
-                </motion.button>
-              ) : (
-                <motion.button className="btn primary" whileHover={{ y: -2 }} whileTap={{ scale: .95 }} onClick={submit}>
-                  {t.sendDesign} <Sparkles size={16} />
-                </motion.button>
-              )}
-            </div>
-          )}
+                <div className="stepNav">
+                  {step > 0 ? (
+                    <motion.button className="btn ghost" whileTap={{ scale: .95 }} onClick={() => setStep(step - 1)}>
+                      <ArrowRight size={16} className="flip-x" /> {t.prevBtn}
+                    </motion.button>
+                  ) : <span />}
+                  {step < steps.length - 1 ? (
+                    <motion.button className="btn primary" whileHover={{ y: -2 }} whileTap={{ scale: .95 }} onClick={() => setStep(step + 1)}>
+                      {t.nextBtn} <ArrowLeft size={16} className="flip-x" />
+                    </motion.button>
+                  ) : (
+                    <motion.button className="btn primary btnLg" whileHover={{ y: -2 }} whileTap={{ scale: .95 }} onClick={submit}>
+                      {t.sendDesign} <Sparkles size={16} />
+                    </motion.button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </motion.section>
@@ -1649,7 +1663,7 @@ function CheckoutPage({ cart, setCart, cartTotal, t }: { cart: CartItem[]; setCa
       <form className="checkoutGrid" onSubmit={submit}>
         <div className="checkoutFields">
           <AnimateScroll><label><span className="labelIcon"><Phone size={14} /></span> {t.fullName}<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label></AnimateScroll>
-          <AnimateScroll delay={.05}><label><span className="labelIcon"><Phone size={14} /></span> {t.phoneNum}<input required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} dir="ltr" /></label></AnimateScroll>
+          <AnimateScroll delay={.05}><label><span className="labelIcon"><Phone size={14} /></span> {t.phoneNum}<input type="tel" required pattern="01[0-9]{9}" title={uiLang === 'en' ? 'Egyptian mobile, e.g. 01012345678' : 'رقم موبايل مصري مثل 01012345678'} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} dir="ltr" /></label></AnimateScroll>
           <AnimateScroll delay={.1}><label><span className="labelIcon"><Mail size={14} /></span> {t.emailLabel}<input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></label></AnimateScroll>
           <AnimateScroll delay={.15}><label><span className="labelIcon"><MapPin size={14} /></span> {t.cityLabel}<select value={form.city} onChange={e => setForm({ ...form, city: e.target.value })}>{['القاهرة', 'الإسكندرية', 'الجيزة', 'المنصورة', 'أخرى'].map(c => <option key={c} value={c}>{pickLabel(c, cityEn)}</option>)}</select></label></AnimateScroll>
           <AnimateScroll delay={.2}><label className="wide"><span className="labelIcon"><MapPin size={14} /></span> {t.addressLabel}<textarea required value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></label></AnimateScroll>
@@ -1727,6 +1741,7 @@ function TrackingPage({ t }: { t: typeof translations.ar }) {
   const [found, setFound] = useState<boolean | null>(null);
   const [proofFile, setProofFile] = useState<string | null>(null);
   const [proofSubmitted, setProofSubmitted] = useState(false);
+  const payPhone = getLocal<any | null>('em-settings', null)?.phone || '01000000000';
 
   const statusList = t.statusFlow;
   const codeIdx: Record<string, number> = { pending: 0, waiting_price: 0, confirmed: 1, unpaid: 2, proof_submitted: 3, processing: 4, ready: 5, shipped: 5, delivered: 6 };
@@ -1820,8 +1835,8 @@ function TrackingPage({ t }: { t: typeof translations.ar }) {
               <div className="paymentWorkflowBox" style={{ marginTop: 24, padding: 20, background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                 <h4><CreditCard size={18} /> {t.paymentInstructionsTitle}</h4>
                 <p style={{ marginTop: 8, fontSize: 14 }}>{uiLang === 'en'
-                  ? <>Please transfer the final total ({money(Number(order.total || 0))}) via InstaPay or Vodafone Cash to: <b>01000000000</b>.</>
-                  : <>يرجى التحويل عبر InstaPay أو محفظة فودافون كاش إلى الرقم: <b>01000000000</b> بالمبلغ الإجمالي النهائي ({money(Number(order.total || 0))}).</>}
+                  ? <>Please transfer the final total ({money(Number(order.total || 0))}) via InstaPay or Vodafone Cash to: <b>{payPhone}</b>.</>
+                  : <>يرجى التحويل عبر InstaPay أو محفظة فودافون كاش إلى الرقم: <b>{payPhone}</b> بالمبلغ الإجمالي النهائي ({money(Number(order.total || 0))}).</>}
                 </p>
                 <p style={{ marginTop: 4, fontSize: 13, color: 'var(--muted)' }}>{t.payInstrNote}</p>
 
@@ -1985,10 +2000,10 @@ function AdminPage({ t }: { t: typeof translations.ar }) {
         if (!logged) return;
         const a = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(50);
         if (a.data) setOrders(a.data as Order[]);
-        const b = await supabase.from('products').select('id,name,price,stock,is_active,image_url,description,categories(name)');
+        const b = await supabase.from('products').select('id,name,price,stock,is_active,image_url,description,is_featured,categories(name)');
         if (b.data) setProducts(b.data.map((x: any) => ({
           id: x.id, name: x.name, category: x.categories?.name || '', price: Number(x.price),
-          stock: x.stock, image: x.image_url || seed[0].image, desc: x.description || ''
+          stock: x.stock, image: x.image_url || seed[0].image, desc: x.description || '', featured: !!x.is_featured
         })));
       } else {
         const localOrders = getLocal<Order[]>('em-all-orders', []);
@@ -2019,6 +2034,7 @@ function AdminPage({ t }: { t: typeof translations.ar }) {
           storeName: v.name ?? prev.storeName,
           shippingFee: String(v.shippingFee ?? prev.shippingFee),
           freeShippingThreshold: String(v.freeShippingOver ?? prev.freeShippingThreshold),
+          phone: v.phone ?? prev.phone,
           whatsapp: v.whatsapp ?? prev.whatsapp,
           instagram: v.instagram ?? prev.instagram,
           tiktok: v.tiktok ?? prev.tiktok
@@ -2109,7 +2125,7 @@ function AdminPage({ t }: { t: typeof translations.ar }) {
         </div>
         <AnimatePresence mode="wait">
           <motion.div key={tab} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: .3 }}>
-            {tab === 'dashboard' && <DashboardPanel orders={orders} products={products} t={t} />}
+            {tab === 'dashboard' && <DashboardPanel orders={orders} products={products} t={t} onNavigate={setTab} />}
             {tab === 'products' && <ProductsAdmin products={products} setProducts={setProducts} t={t} />}
             {tab === 'orders' && <OrdersAdmin orders={orders} setOrders={setOrders} t={t} />}
             {tab === 'customers' && <CustomersAdmin customers={customers} orders={orders} t={t} />}
@@ -2122,10 +2138,22 @@ function AdminPage({ t }: { t: typeof translations.ar }) {
   );
 }
 
-function DashboardPanel({ orders, products, t }: { orders: Order[]; products: Product[]; t: typeof translations.ar }) {
+function DashboardPanel({ orders, products, t, onNavigate }: { orders: Order[]; products: Product[]; t: typeof translations.ar; onNavigate: (tab: string) => void }) {
   const totalSales = orders.reduce((s, o) => s + Number(o.total || 0), 0);
   const lowStock = products.filter(p => p.stock < 20);
   const recentOrders = orders.slice(0, 5);
+
+  const exportCsv = () => {
+    const rows: (string | number)[][] = [
+      ['Order', 'Customer', 'Phone', 'City', 'Subtotal', 'Shipping', 'Total', 'Payment', 'Date'],
+      ...orders.map(o => [o.order_number, o.customer_name, o.customer_phone, o.city, o.subtotal ?? '', o.shipping_fee ?? '', o.total ?? '', paymentStatusLabel(o.payment_status) || o.payment_status || '', o.created_at?.slice(0, 10) || ''])
+    ];
+    const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `esraa-orders-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <>
@@ -2182,9 +2210,9 @@ function DashboardPanel({ orders, products, t }: { orders: Order[]; products: Pr
 
           <div className="panelHead" style={{ marginTop: 20 }}><h3><Sparkles size={18} /> {t.quickActionsHead}</h3></div>
           <div className="quickActions">
-            <motion.button className="btn" whileHover={{ scale: 1.03 }} whileTap={{ scale: .97 }}><Plus size={16} /> {t.qaAddProduct}</motion.button>
-            <motion.button className="btn" whileHover={{ scale: 1.03 }} whileTap={{ scale: .97 }}><Download size={16} /> {t.qaExport}</motion.button>
-            <motion.button className="btn" whileHover={{ scale: 1.03 }} whileTap={{ scale: .97 }}><Tag size={16} /> {t.qaCoupon}</motion.button>
+            <motion.button className="btn" whileHover={{ scale: 1.03 }} whileTap={{ scale: .97 }} onClick={() => onNavigate('products')}><Plus size={16} /> {t.qaAddProduct}</motion.button>
+            <motion.button className="btn" whileHover={{ scale: 1.03 }} whileTap={{ scale: .97 }} onClick={exportCsv}><Download size={16} /> {t.qaExport}</motion.button>
+            <motion.button className="btn" whileHover={{ scale: 1.03 }} whileTap={{ scale: .97 }} onClick={() => onNavigate('coupons')}><Tag size={16} /> {t.qaCoupon}</motion.button>
           </div>
         </div>
       </div>
@@ -2523,6 +2551,7 @@ function SettingsAdmin({ settings, setSettings, t }: { settings: any; setSetting
         value: {
           name: settings.storeName, shippingFee: Number(settings.shippingFee) || 0,
           freeShippingOver: Number(settings.freeShippingThreshold) || 0,
+          phone: settings.phone,
           whatsapp: settings.whatsapp, instagram: settings.instagram, tiktok: settings.tiktok
         }
       });
@@ -2595,7 +2624,7 @@ function Footer({ t }: { t: typeof translations.ar }) {
         <div className="footerCol">
           <h4>{t.contactUs}</h4>
           <p className="footerContactItem"><MapPin size={16} /> {t.location}</p>
-          <p className="footerContactItem"><Phone size={16} /> 01000000000</p>
+          <p className="footerContactItem"><Phone size={16} /> {getLocal<any | null>('em-settings', null)?.phone || '01000000000'}</p>
           <p className="footerContactItem"><Mail size={16} /> info@esraamoments.com</p>
         </div>
       </div>
