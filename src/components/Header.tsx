@@ -16,14 +16,21 @@ export function Header({
 }) {
   const scrolled = useScrollShadow();
   return (
-    <motion.header
+    <>
+      <div className={`mobile-overlay ${menu ? 'on' : ''}`} onClick={() => setMenu(false)} />
+      <motion.header
       className={`header ${scrolled ? 'scrolled' : ''}`}
       initial={{ y: -82 }}
       animate={{ y: 0 }}
       transition={{ duration: .6, ease }}
     >
       <div className="header-inner">
-        <button className="nav-mobile-toggle mobileOnly" onClick={() => setMenu(!menu)} aria-label="Menu">
+        <button
+          className={menu ? 'nav-mobile-toggle mobileOnly active' : 'nav-mobile-toggle mobileOnly'}
+          onClick={() => setMenu(!menu)}
+          aria-label="Menu"
+          aria-expanded={menu}
+        >
           <span></span>
         </button>
 
@@ -80,6 +87,7 @@ export function Header({
           </motion.button>
         </div>
       </div>
-    </motion.header>
+      </motion.header>
+    </>
   );
 }
