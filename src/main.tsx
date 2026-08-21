@@ -186,6 +186,10 @@ const translations = {
     signupNotice: 'تم إنشاء الحساب. حسابات جديدة تُسجَّل كعميل تلقائياً وليس كإدارة — لازم مسؤول يمنحك صلاحية admin من جدول user_roles.',
     noRoleError: 'هذا الحساب لا يملك صلاحية الدخول للوحة الإدارة.',
     quickLinks: 'روابط سريعة', contactUs: 'التواصل', location: 'القاهرة، مصر',
+  nfTitle: 'الصفحة دي مش موجودة', nfSub: 'يبدو إنك وصلتي لرابط قديم أو غلط.', nfBtn: 'الرجوع للرئيسية',
+  newsDone: 'تم تسجيل بريدك، هنبعتلك أحدث التصاميم والعروض!',
+  tabDesigns: 'طلبات التصميم', noDesigns: 'لا توجد طلبات تصميم بعد.',
+  setInsta: 'رابط انستجرام', setTiktok: 'رابط تيك توك',
     rights: 'جميع الحقوق محفوظة.',
     footerDesc: 'تفاصيل صغيرة تصنع لحظات لا تُنسى. توزيعات وهدايا مخصصة لكل مناسباتك السعيدة في مصر.',
     admChecking: 'جارِ التحقق من الصلاحية…',
@@ -376,6 +380,10 @@ const translations = {
     signupNotice: 'Account created. New accounts are registered as customers only — an admin must grant you the admin role in the user_roles table.',
     noRoleError: 'This account does not have access to the admin panel.',
     quickLinks: 'Quick Links', contactUs: 'Contact', location: 'Cairo, Egypt',
+  nfTitle: 'Page Not Found', nfSub: 'Looks like you followed an old or broken link.', nfBtn: 'Back to Home',
+  newsDone: 'You are subscribed! We will send you our latest designs and offers.',
+  tabDesigns: 'Design Requests', noDesigns: 'No design requests yet.',
+  setInsta: 'Instagram URL', setTiktok: 'TikTok URL',
     rights: 'All rights reserved.',
     footerDesc: 'Little details that make unforgettable moments. Custom favors and gifts for all your happy occasions in Egypt.',
     admChecking: 'Verifying access…',
@@ -587,6 +595,21 @@ function useScrollShadow() {
   return scrolled;
 }
 
+function FloatingWhatsApp() {
+  const wa = getLocal<any | null>('em-settings', null)?.whatsapp || '201097905455';
+  return (
+    <motion.a
+      className="waFloat"
+      href={`https://wa.me/${wa}?text=${encodeURIComponent('مرحباً ESRAA Moments، عايزة أستفسر عن التوزيعات 🌸')}`}
+      target="_blank" rel="noreferrer" aria-label="WhatsApp"
+      initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 1.2, type: 'spring', stiffness: 260, damping: 18 }}
+      whileHover={{ scale: 1.1 }} whileTap={{ scale: .92 }}
+    >
+      <MessageCircle size={26} />
+    </motion.a>
+  );
+}
+
 function App() {
   const products = useProducts();
   const [cart, setCart] = useLocalStorage<CartItem[]>('em-cart', []);
@@ -608,6 +631,17 @@ function App() {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.title = translations[lang].pageTitle;
   }, [lang]);
+
+  useEffect(() => {
+    if (!localStorage.getItem('em-settings')) {
+      localStorage.setItem('em-settings', JSON.stringify({
+        shippingFee: '25', freeShippingThreshold: '500',
+        phone: '01097905455', whatsapp: '201097905455',
+        instagram: 'https://www.instagram.com/esraamomentsstore',
+        tiktok: 'https://www.tiktok.com/@esraamomentsstore'
+      }));
+    }
+  }, []);
 
   useEffect(() => { if (!location.hash) window.scrollTo(0, 0); setMenu(false); }, [location.pathname]);
 
@@ -673,10 +707,21 @@ function App() {
             <Route path="/track" element={<TrackingPage t={t} />} />
             <Route path="/login" element={<LoginPage t={t} />} />
             <Route path="/admin/*" element={<AdminPage t={t} />} />
+            <Route path="*" element={
+              <motion.section className="section page" {...pageVariants}>
+                <div className="emptyState">
+                  <Search size={48} strokeWidth={1} />
+                  <h3>{t.nfTitle}</h3>
+                  <p>{t.nfSub}</p>
+                  <Link className="btn primary" to="/">{t.nfBtn}</Link>
+                </div>
+              </motion.section>
+            } />
           </Routes>
         </motion.div>
       </AnimatePresence>
 
+      <FloatingWhatsApp />
       <Footer t={t} />
     </div>
   );
@@ -913,7 +958,16 @@ function ProductCard({ p, addToCart, wish, setWish, t }: { p: Product; addToCart
 function Home({ products, addToCart, wish, setWish, t }: { products: Product[]; addToCart: (p: Product) => void; wish: string[]; setWish: (x: string[]) => void; t: typeof translations.ar }) {
   const faqData = t.faqs;
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [newsEmail, setNewsEmail] = useState('');
+  const [newsDone, setNewsDone] = useState(false);
   const bestSellers = useMemo(() => [...products].sort((a, b) => b.stock - a.stock).slice(0, 6), [products]);
+
+  const subscribe = () => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newsEmail)) return;
+    const list = getLocal<string[]>('em-newsletter', []);
+    if (!list.includes(newsEmail)) localStorage.setItem('em-newsletter', JSON.stringify([...list, newsEmail]));
+    setNewsDone(true);
+  };
 
   return (
     <>
@@ -1102,10 +1156,16 @@ function Home({ products, addToCart, wish, setWish, t }: { products: Product[]; 
             <h2>{t.stayConnected}</h2>
             <p>{t.subscribeText}</p>
             <div className="newsletterForm">
-              <input type="email" placeholder={t.yourEmail} />
-              <motion.button className="btn primary" whileHover={{ y: -2 }} whileTap={{ scale: .96 }}>
-                <Send size={16} /> {t.subscribeBtn}
-              </motion.button>
+              {newsDone ? (
+                <p className="newsDone"><Check size={16} /> {t.newsDone}</p>
+              ) : (
+                <>
+                  <input type="email" value={newsEmail} onChange={e => setNewsEmail(e.target.value)} placeholder={t.yourEmail} onKeyDown={e => e.key === 'Enter' && subscribe()} />
+                  <motion.button className="btn primary" whileHover={{ y: -2 }} whileTap={{ scale: .96 }} onClick={subscribe}>
+                    <Send size={16} /> {t.subscribeBtn}
+                  </motion.button>
+                </>
+              )}
             </div>
           </div>
         </AnimateScroll>
@@ -1377,22 +1437,28 @@ function Customizer({ t }: { t: typeof translations.ar }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<Design>({ occasion: 'زفاف', type: 'علبة', qty: 30, color: 'آيفوري وذهبي', name: '', date: '', extras: '' });
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
   const steps = ['المناسبة', 'التوزيعة', 'التفاصيل', 'المراجعة'];
   const pal = PALETTES[form.color] || PALETTES['آيفوري وذهبي'];
   const TypeIcon = TYPE_ICONS[form.type] || Gift;
   const monogram = (form.name.trim()[0] || 'E').toUpperCase();
 
   const submit = async () => {
+    if (sending) return;
+    setSending(true);
     if (supabase) {
       const { error } = await supabase.from('custom_designs').insert({
         reference: `CD-${Date.now().toString().slice(-7)}`,
         occasion: form.occasion, favor_type: form.type, quantity: form.qty,
         palette: form.color, inscription: form.name, event_date: form.date || null, extras: form.extras
       });
-      if (error) { alert(error.message); return; }
+      if (error) { alert(error.message); setSending(false); return; }
     } else {
       localStorage.setItem('em-design', JSON.stringify(form));
+      const list = getLocal<any[]>('em-designs', []);
+      localStorage.setItem('em-designs', JSON.stringify([...list, { ...form, reference: `CD-${Date.now().toString().slice(-7)}`, created_at: new Date().toISOString() }]));
     }
+    setSending(false);
     setSent(true);
   };
 
@@ -1521,7 +1587,7 @@ function Customizer({ t }: { t: typeof translations.ar }) {
                       {t.nextBtn} <ArrowLeft size={16} className="flip-x" />
                     </motion.button>
                   ) : (
-                    <motion.button className="btn primary btnLg" whileHover={{ y: -2 }} whileTap={{ scale: .95 }} onClick={submit}>
+                    <motion.button className="btn primary btnLg" whileHover={{ y: -2 }} whileTap={{ scale: .95 }} onClick={submit} disabled={sending}>
                       {t.sendDesign} <Sparkles size={16} />
                     </motion.button>
                   )}
@@ -1543,6 +1609,7 @@ function CheckoutPage({ cart, setCart, cartTotal, t }: { cart: CartItem[]; setCa
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponError, setCouponError] = useState('');
   const [done, setDone] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Per business specs, shipping & final price are confirmed after admin review, but we show estimated starting subtotal & request submission
   const storeCfg = getLocal<any | null>('em-settings', null);
@@ -1584,7 +1651,8 @@ function CheckoutPage({ cart, setCart, cartTotal, t }: { cart: CartItem[]; setCa
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!cart.length) return;
+    if (!cart.length || submitting) return;
+    setSubmitting(true);
     const orderNo = `EM-${Date.now().toString().slice(-8)}`;
     const orderData = {
       order_number: orderNo,
@@ -1613,7 +1681,7 @@ function CheckoutPage({ cart, setCart, cartTotal, t }: { cart: CartItem[]; setCa
         subtotal: cartTotal, shipping_fee: estimatedShipping, discount, total: estimatedTotal,
         status: 'pending', payment_status: 'unpaid'
       }).select().single();
-      if (error) { alert(error.message); return; }
+      if (error) { alert(error.message); setSubmitting(false); return; }
       await supabase.from('order_items').insert(cart.map(i => ({
         order_id: data.id, product_id: i.id, name: i.name,
         unit_price: i.price, quantity: i.qty, total: i.price * i.qty
@@ -1722,7 +1790,7 @@ function CheckoutPage({ cart, setCart, cartTotal, t }: { cart: CartItem[]; setCa
             <div className="summaryGrand"><span>{t.grandEst}</span><b>{money(estimatedTotal)}</b></div>
             <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>{t.finalPriceNote}</p>
             <motion.div whileHover={{ y: -3 }} whileTap={{ scale: .96 }} style={{ marginTop: 16 }}>
-              <button className="btn primary full btnLg" type="submit" disabled={!cart.length}>
+              <button className="btn primary full btnLg" type="submit" disabled={!cart.length || submitting}>
                 <Send size={18} /> {t.submitOrder}
               </button>
             </motion.div>
@@ -1741,7 +1809,7 @@ function TrackingPage({ t }: { t: typeof translations.ar }) {
   const [found, setFound] = useState<boolean | null>(null);
   const [proofFile, setProofFile] = useState<string | null>(null);
   const [proofSubmitted, setProofSubmitted] = useState(false);
-  const payPhone = getLocal<any | null>('em-settings', null)?.phone || '01000000000';
+  const payPhone = getLocal<any | null>('em-settings', null)?.phone || '01097905455';
 
   const statusList = t.statusFlow;
   const codeIdx: Record<string, number> = { pending: 0, waiting_price: 0, confirmed: 1, unpaid: 2, proof_submitted: 3, processing: 4, ready: 5, shipped: 5, delivered: 6 };
@@ -1973,8 +2041,8 @@ function AdminPage({ t }: { t: typeof translations.ar }) {
   const [settings, setSettings] = useState({
     storeName: 'ESRAA Moments', storeDesc: 'تفاصيل صغيرة تصنع لحظات لا تُنسى',
     logoUrl: '/images/logo.jpeg', shippingFee: '25', freeShippingThreshold: '500',
-    whatsapp: '201xxxxxxxxx', email: 'info@esraamoments.com', phone: '01000000000',
-    instagram: 'https://instagram.com/esraamomentsstore', tiktok: 'https://tiktok.com/@esraamomentsstore'
+    whatsapp: '201097905455', email: 'info@esraamoments.com', phone: '01097905455',
+    instagram: 'https://www.instagram.com/esraamomentsstore', tiktok: 'https://www.tiktok.com/@esraamomentsstore'
   });
 
   useEffect(() => {
@@ -2078,8 +2146,9 @@ function AdminPage({ t }: { t: typeof translations.ar }) {
 
   const tabs: [string, string, any][] = [
     ['dashboard', t.tabOverview, LayoutDashboard],
-    ['products', t.tabProducts, Box],
     ['orders', t.tabOrders, Package],
+    ['designs', t.tabDesigns, Palette],
+    ['products', t.tabProducts, Box],
     ['customers', t.tabCustomers, Users],
     ['coupons', t.tabCoupons, Tag],
     ['settings', t.tabSettings, Settings],
@@ -2126,6 +2195,7 @@ function AdminPage({ t }: { t: typeof translations.ar }) {
         <AnimatePresence mode="wait">
           <motion.div key={tab} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: .3 }}>
             {tab === 'dashboard' && <DashboardPanel orders={orders} products={products} t={t} onNavigate={setTab} />}
+            {tab === 'designs' && <DesignsPanel t={t} />}
             {tab === 'products' && <ProductsAdmin products={products} setProducts={setProducts} t={t} />}
             {tab === 'orders' && <OrdersAdmin orders={orders} setOrders={setOrders} t={t} />}
             {tab === 'customers' && <CustomersAdmin customers={customers} orders={orders} t={t} />}
@@ -2217,6 +2287,44 @@ function DashboardPanel({ orders, products, t, onNavigate }: { orders: Order[]; 
         </div>
       </div>
     </>
+  );
+}
+
+function DesignsPanel({ t }: { t: typeof translations.ar }) {
+  const [designs, setDesigns] = useState<any[]>([]);
+  useEffect(() => {
+    (async () => {
+      if (supabase) {
+        const { data } = await supabase.from('custom_designs').select('*').order('created_at', { ascending: false }).limit(100);
+        if (data) setDesigns(data);
+      } else {
+        setDesigns(getLocal<any[]>('em-designs', []).slice().reverse());
+      }
+    })();
+  }, []);
+  return (
+    <div className="adminPanel">
+      <div className="panelHead">
+        <h3><Palette size={18} /> {t.tabDesigns}</h3>
+        <span className="muted">{designs.length} {t.ordersWord}</span>
+      </div>
+      <div className="adminTable">
+        <div className="adminTableRow header">
+          <span>{t.sName}</span><span>{t.sOccasion}</span><span>{t.sType}</span><span>{t.sQty}</span><span>{t.sColor}</span><span>{t.sDate}</span>
+        </div>
+        {designs.map((d, i) => (
+          <motion.div className="adminTableRow" key={d.id || i} whileHover={{ backgroundColor: 'var(--paper)' }}>
+            <span><b>{d.inscription || d.reference || '---'}</b></span>
+            <span>{occLabel(d.occasion)}</span>
+            <span>{pickLabel(d.favor_type, favorTypeEn)}</span>
+            <span>{d.quantity}</span>
+            <span>{pickLabel(d.palette, colorEn)}</span>
+            <small>{d.event_date || d.created_at?.slice(0, 10) || '---'}</small>
+          </motion.div>
+        ))}
+        {!designs.length && <div className="adminTableRow"><span className="muted" style={{ gridColumn: '1/-1', textAlign: 'center', padding: 30 }}>{t.noDesigns}</span></div>}
+      </div>
+    </div>
   );
 }
 
@@ -2573,6 +2681,8 @@ function SettingsAdmin({ settings, setSettings, t }: { settings: any; setSetting
         <label>{t.setShipFee}<input className="input" value={settings.shippingFee} onChange={e => setSettings({ ...settings, shippingFee: e.target.value })} /></label>
         <label>{t.setFreeShip}<input className="input" value={settings.freeShippingThreshold} onChange={e => setSettings({ ...settings, freeShippingThreshold: e.target.value })} /></label>
         <label>{t.setWhats}<input className="input" value={settings.whatsapp} onChange={e => setSettings({ ...settings, whatsapp: e.target.value })} dir="ltr" /></label>
+        <label>{t.setInsta}<input className="input" value={settings.instagram} onChange={e => setSettings({ ...settings, instagram: e.target.value })} dir="ltr" /></label>
+        <label>{t.setTiktok}<input className="input" value={settings.tiktok} onChange={e => setSettings({ ...settings, tiktok: e.target.value })} dir="ltr" /></label>
         <label className="wide">{t.setDesc}<textarea className="textarea" value={settings.storeDesc} onChange={e => setSettings({ ...settings, storeDesc: e.target.value })} /></label>
       </div>
       <motion.button className="btn primary" style={{ marginTop: 24 }} whileHover={{ scale: 1.03 }} whileTap={{ scale: .97 }} onClick={save} disabled={saving}>
@@ -2583,6 +2693,7 @@ function SettingsAdmin({ settings, setSettings, t }: { settings: any; setSetting
 }
 
 function Footer({ t }: { t: typeof translations.ar }) {
+  const storeCfg = getLocal<any | null>('em-settings', null);
   return (
     <footer className="footer">
       <div className="container footerGrid">
@@ -2593,11 +2704,14 @@ function Footer({ t }: { t: typeof translations.ar }) {
           </Link>
           <p className="footerDesc">{t.footerDesc}</p>
           <div className="socialLinks">
-            <motion.a href="https://instagram.com" target="_blank" rel="noreferrer" whileHover={{ scale: 1.2, color: 'var(--accent)' }} aria-label="Instagram">
+            <motion.a href={storeCfg?.instagram || 'https://www.instagram.com/esraamomentsstore'} target="_blank" rel="noreferrer" whileHover={{ scale: 1.2, color: 'var(--accent)' }} aria-label="Instagram">
               <Instagram size={20} />
             </motion.a>
-            <motion.a href="https://whatsapp.com" target="_blank" rel="noreferrer" whileHover={{ scale: 1.2, color: 'var(--accent)' }} aria-label="WhatsApp">
+            <motion.a href={`https://wa.me/${storeCfg?.whatsapp || '201097905455'}`} target="_blank" rel="noreferrer" whileHover={{ scale: 1.2, color: 'var(--accent)' }} aria-label="WhatsApp">
               <MessageCircle size={20} />
+            </motion.a>
+            <motion.a href={storeCfg?.tiktok || 'https://www.tiktok.com/@esraamomentsstore'} target="_blank" rel="noreferrer" whileHover={{ scale: 1.2, color: 'var(--accent)' }} aria-label="TikTok">
+              <Music size={20} />
             </motion.a>
           </div>
         </div>
@@ -2624,7 +2738,7 @@ function Footer({ t }: { t: typeof translations.ar }) {
         <div className="footerCol">
           <h4>{t.contactUs}</h4>
           <p className="footerContactItem"><MapPin size={16} /> {t.location}</p>
-          <p className="footerContactItem"><Phone size={16} /> {getLocal<any | null>('em-settings', null)?.phone || '01000000000'}</p>
+          <p className="footerContactItem"><Phone size={16} /> {storeCfg?.phone || '01097905455'}</p>
           <p className="footerContactItem"><Mail size={16} /> info@esraamoments.com</p>
         </div>
       </div>

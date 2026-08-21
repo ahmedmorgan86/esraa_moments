@@ -3276,3 +3276,23 @@ html { scroll-behavior: smooth; }
   .stepPills button span { white-space: nowrap; }
   .favorBox { width: min(300px, 88vw); }
 }
+
+/* ── Floating WhatsApp + newsletter success ── */
+.waFloat {
+  position: fixed; bottom: 22px; inset-inline-end: 22px; z-index: 900;
+  width: 56px; height: 56px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #25d366, #128c7e); color: #fff;
+  box-shadow: 0 8px 24px rgba(18,140,126,.4);
+}
+.waFloat::after {
+  content: ''; position: absolute; inset: -5px; border-radius: 50%;
+  border: 2px solid rgba(37,211,102,.45); animation: waPulse 2.2s ease-out infinite;
+}
+@keyframes waPulse {
+  0% { transform: scale(.9); opacity: 1; }
+  70% { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+@media (max-width: 640px) { .waFloat { bottom: 16px; inset-inline-end: 16px; width: 50px; height: 50px; } }
+.newsDone { display: inline-flex; align-items: center; gap: 8px; color: var(--success); font-weight: 700; padding: 14px 4px; }
