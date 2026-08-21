@@ -609,7 +609,15 @@ function App() {
     document.title = translations[lang].pageTitle;
   }, [lang]);
 
-  useEffect(() => { window.scrollTo(0, 0); setMenu(false); }, [location.pathname]);
+  useEffect(() => { if (!location.hash) window.scrollTo(0, 0); setMenu(false); }, [location.pathname]);
+
+  useEffect(() => {
+    if (!location.hash) return;
+    const timer = setTimeout(() => {
+      document.querySelector(location.hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [location]);
 
   const addToCart = useCallback((p: Product) => {
     setCart(c => {
@@ -703,8 +711,8 @@ function Header({
         <nav className={`nav-desktop ${menu ? 'mobile-active' : ''}`}>
           <Link to="/shop" className="nav-link" onClick={() => setMenu(false)}>{t.store}</Link>
           <Link to="/custom" className="nav-link" onClick={() => setMenu(false)}>{t.designStudio}</Link>
-          <a href="/#about" className="nav-link" onClick={() => setMenu(false)}>{t.aboutUs}</a>
-          <a href="/#faq" className="nav-link" onClick={() => setMenu(false)}>{t.faq}</a>
+          <Link to="/#about" className="nav-link" onClick={() => setMenu(false)}>{t.aboutUs}</Link>
+          <Link to="/#faq" className="nav-link" onClick={() => setMenu(false)}>{t.faq}</Link>
           <Link to="/track" className="nav-link" onClick={() => setMenu(false)}>{t.track}</Link>
         </nav>
 
@@ -759,7 +767,10 @@ function CartDrawer({
   changeQty: (id: string, d: number) => void; remove: (id: string) => void;
   total: number; t: typeof translations.ar;
 }) {
-  const shipping = total >= 500 || !total ? 0 : 25;
+  const storeCfg = getLocal<any | null>('em-settings', null);
+  const SHIP_FEE = Number(storeCfg?.shippingFee) > 0 ? Number(storeCfg.shippingFee) : 25;
+  const FREE_OVER = Number(storeCfg?.freeShippingThreshold) || 500;
+  const shipping = total >= FREE_OVER || !total ? 0 : SHIP_FEE;
   const nav = useNavigate();
 
   return (
@@ -836,7 +847,7 @@ function CartDrawer({
                   <div className="cartDrawerSummary">
                     <div><span>{t.subtotal}</span><b>{money(total)}</b></div>
                     <div><span>{t.shipping}</span><b className={shipping === 0 ? 'freeShipping' : ''}>{shipping ? money(shipping) : t.free}</b></div>
-                    {total < 500 && total > 0 && <p className="shippingHint">{t.freeShippingHint}</p>}
+                    {total < FREE_OVER && total > 0 && <p className="shippingHint">{t.freeShippingHint}</p>}
                     <hr />
                     <div className="cartDrawerGrand"><span>{t.total}</span><b>{money(total + shipping)}</b></div>
                   </div>
@@ -1520,7 +1531,10 @@ function CheckoutPage({ cart, setCart, cartTotal, t }: { cart: CartItem[]; setCa
   const [done, setDone] = useState<string | null>(null);
 
   // Per business specs, shipping & final price are confirmed after admin review, but we show estimated starting subtotal & request submission
-  const estimatedShipping = cartTotal >= 500 ? 0 : 25;
+  const storeCfg = getLocal<any | null>('em-settings', null);
+  const SHIP_FEE = Number(storeCfg?.shippingFee) > 0 ? Number(storeCfg.shippingFee) : 25;
+  const FREE_OVER = Number(storeCfg?.freeShippingThreshold) || 500;
+  const estimatedShipping = cartTotal >= FREE_OVER ? 0 : SHIP_FEE;
   const discount = appliedCoupon
     ? appliedCoupon.type === 'percent' ? Math.round(cartTotal * appliedCoupon.discount / 100) : appliedCoupon.discount
     : 0;
@@ -1616,6 +1630,17 @@ function CheckoutPage({ cart, setCart, cartTotal, t }: { cart: CartItem[]; setCa
     </motion.section>
   );
 
+  if (!cart.length) return (
+    <motion.section className="section page" {...pageVariants}>
+      <div className="emptyState">
+        <ShoppingBag size={48} strokeWidth={1} />
+        <h3>{t.cartEmptyTitle}</h3>
+        <p>{t.cartEmptySub}</p>
+        <Link className="btn primary" to="/shop">{t.browseShop}</Link>
+      </div>
+    </motion.section>
+  );
+
   return (
     <motion.section className="section page" {...pageVariants}>
       <div className="sectionHead">
@@ -1704,42 +1729,51 @@ function TrackingPage({ t }: { t: typeof translations.ar }) {
   const [proofSubmitted, setProofSubmitted] = useState(false);
 
   const statusList = t.statusFlow;
-  const flowIndex = (o: any): number => {
-    const ar: string[] = translations.ar.statusFlow, en: string[] = translations.en.statusFlow;
-    const candidates = [paymentStatusLabel(o?.payment_status), orderStatusLabel(o?.status), o?.payment_status, o?.status].filter(Boolean) as string[];
-    for (const c of candidates) {
-      let i = ar.indexOf(c); if (i < 0) i = en.indexOf(c);
-      if (i >= 0) return i;
-    }
-    return 0;
+  const codeIdx: Record<string, number> = { pending: 0, waiting_price: 0, confirmed: 1, unpaid: 2, proof_submitted: 3, processing: 4, ready: 5, shipped: 5, delivered: 6 };
+  const legacyIdx: Record<string, number> = {
+    'قيد المراجعة': 0, 'بانتظار تأكيد السعر والشحن': 0, 'Under Review': 0, 'Awaiting Price Confirmation': 0,
+    'تم تأكيد السعر': 1, 'Price Confirmed': 1,
+    'بانتظار الدفع': 2, 'Awaiting Payment': 2,
+    'تم رفع إيصال الدفع': 3, 'تم رفع الإيصال (قيد التحقق)': 3, 'Receipt Submitted': 3, 'Receipt Submitted (Under Review)': 3,
+    'تم التحقق والإنتاج': 4, 'Verified & In Production': 4,
+    'جاهز للشحن': 5, 'Ready to Ship': 5, 'تم الشحن': 5, 'Shipped': 5,
+    'مكتمل': 6, 'Completed': 6
   };
+  const idxOf = (v?: string | null) => (v == null ? -1 : codeIdx[v] ?? legacyIdx[v] ?? -1);
+  const flowIndex = (o: any): number => Math.max(idxOf(o?.status), idxOf(o?.payment_status), 0);
   const statusIdx = order ? flowIndex(order) : 0;
 
-  const search = async () => {
-    if (!input.trim()) return;
+  const search = async (val?: string) => {
+    const v = (typeof val === 'string' ? val : input).trim();
+    if (!v) return;
     if (supabase) {
-      const { data } = await supabase.from('orders').select('*').eq('order_number', input.trim()).maybeSingle();
+      const { data } = await supabase.from('orders').select('*').eq('order_number', v).maybeSingle();
       setOrder(data); setFound(!!data);
     } else {
       const allOrders = getLocal<any[]>('em-all-orders', []);
-      const foundOrd = allOrders.find(o => o.order_number === input.trim());
+      const foundOrd = allOrders.find(o => o.order_number === v);
       const lastOrd = getLocal<any | null>('em-last-order', null);
-      const match = foundOrd || (lastOrd?.order_number === input.trim() ? lastOrd : null);
+      const match = foundOrd || (lastOrd?.order_number === v ? lastOrd : null);
       if (match) { setOrder(match); setFound(true); }
       else { setOrder(null); setFound(false); }
     }
   };
 
-  useEffect(() => { if (q) { setInput(q); setTimeout(search, 300); } }, [q]);
+  useEffect(() => {
+    if (!q) return;
+    setInput(q);
+    const timer = setTimeout(() => search(q), 300);
+    return () => clearTimeout(timer);
+  }, [q]);
 
   const handleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !order) return;
     setProofFile(file.name);
-    const updated = { ...order, status: 'تم رفع إيصال الدفع', payment_status: 'تم رفع إيصال الدفع (قيد التحقق)' };
+    const updated = { ...order, status: 'proof_submitted', payment_status: 'proof_submitted' };
     if (supabase) {
-      const proofNote = `[تم رفع إيصال دفع: ${file.name} — ${new Date().toLocaleString('ar-EG')}]`;
-      const { error } = await supabase.from('orders').update({ notes: `${order.notes || ''}\n${proofNote}`.trim() }).eq('id', order.id);
+      const proofNote = `[${uiLang === 'en' ? 'Payment receipt uploaded' : 'تم رفع إيصال دفع'}: ${file.name} — ${new Date().toLocaleString(uiLang === 'en' ? 'en-US' : 'ar-EG')}]`;
+      const { error } = await supabase.from('orders').update({ payment_status: 'proof_submitted', notes: `${order.notes || ''}\n${proofNote}`.trim() }).eq('id', order.id);
       if (error) { alert((uiLang === 'en' ? 'Could not upload receipt, please try again: ' : 'تعذر رفع الإيصال، حاولي مرة أخرى: ') + error.message); return; }
     } else {
       localStorage.setItem('em-last-order', JSON.stringify(updated));
@@ -1760,7 +1794,7 @@ function TrackingPage({ t }: { t: typeof translations.ar }) {
           <div className="trackingSearch">
             <Search size={18} />
             <input value={input} onChange={e => setInput(e.target.value)} placeholder={t.orderPlaceholder} onKeyDown={e => e.key === 'Enter' && search()} />
-            <motion.button className="btn primary" whileHover={{ y: -2 }} whileTap={{ scale: .95 }} onClick={search}>{t.searchBtn}</motion.button>
+            <motion.button className="btn primary" whileHover={{ y: -2 }} whileTap={{ scale: .95 }} onClick={() => search()}>{t.searchBtn}</motion.button>
           </div>
         </AnimateScroll>
 
@@ -2047,7 +2081,7 @@ function AdminPage({ t }: { t: typeof translations.ar }) {
             key={k}
             className={tab === k ? 'sidebarLink active' : 'sidebarLink'}
             onClick={() => setTab(k)}
-            whileHover={{ x: -5 }}
+            whileHover={{ x: uiLang === 'en' ? 5 : -5 }}
             whileTap={{ scale: .97 }}
           >
             <Icon size={18} />{label}
@@ -2194,6 +2228,7 @@ function ProductsAdmin({ products, setProducts, t }: { products: Product[]; setP
   };
 
   const deleteProduct = async (id: string) => {
+    if (!window.confirm(uiLang === 'en' ? 'Are you sure you want to delete this product?' : 'هل أنت متأكد من حذف هذا المنتج نهائياً؟')) return;
     if (supabase) {
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) { alert(t.alertDeleteFail + error.message); return; }
@@ -2329,7 +2364,7 @@ function OrdersAdmin({ orders, setOrders, t }: { orders: Order[]; setOrders: (o:
             <span><b>{money(Number(o.total || 0))}</b></span>
             <span><span className="badge badgeWarning">{paymentStatusLabel(o.payment_status) || orderStatusLabel(o.status) || t.underReviewWord}</span></span>
             <span>
-              <motion.button className="btn btn-sm primary" whileHover={{ scale: 1.05 }} whileTap={{ scale: .95 }} onClick={() => { setSelectedOrder(o); setEditPrice(String(o.subtotal || 0)); setEditShipping(String(o.shipping_fee || 25)); setEditPaymentStatus(payStateToLabel(paymentStatusLabels.ar[o.payment_status] ? o.payment_status : 'unpaid')); }}>
+              <motion.button className="btn btn-sm primary" whileHover={{ scale: 1.05 }} whileTap={{ scale: .95 }} onClick={() => { setSelectedOrder(o); setEditPrice(String(o.subtotal || 0)); setEditShipping(String(o.shipping_fee || 25)); const known = paymentStatusLabels.ar[o.payment_status] || orderStatusLabels.ar[o.payment_status] ? o.payment_status : 'unpaid'; setEditPaymentStatus(payStateToLabel(known)); }}>
                 {t.reviewConfirm} <Eye size={14} />
               </motion.button>
             </span>
@@ -2552,8 +2587,8 @@ function Footer({ t }: { t: typeof translations.ar }) {
           <ul>
             <li><Link to="/custom">{t.designStudio}</Link></li>
             <li><Link to="/track">{t.track}</Link></li>
-            <li><a href="/#about">{t.aboutUs}</a></li>
-            <li><a href="/#faq">{t.faq}</a></li>
+            <li><Link to="/#about">{t.aboutUs}</Link></li>
+            <li><Link to="/#faq">{t.faq}</Link></li>
           </ul>
         </div>
 

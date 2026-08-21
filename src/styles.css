@@ -3112,3 +3112,36 @@ html { scroll-behavior: smooth; }
 @media (min-width: 901px) {
   .customBody { grid-template-columns: 0.9fr 1.1fr; }
 }
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE FIX v4 — collapse remaining 2-col grids on mobile
+   product page / checkout / brand story / tracking / shop bar
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .productPageGrid { grid-template-columns: 1fr; gap: 28px; }
+  .productGallery { min-height: 0; }
+  .galleryMain { max-height: 420px; }
+  .checkoutGrid { grid-template-columns: 1fr; gap: 28px; }
+  .brandStory { grid-template-columns: 1fr; gap: 36px; }
+  .brandStoryImages { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .shopToolbar { flex-direction: column; align-items: stretch; }
+  .searchBar input { width: 100%; }
+}
+@media (max-width: 640px) {
+  .checkoutFields { grid-template-columns: 1fr; gap: 14px; padding: 22px 18px; }
+  .trackingMeta { grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; }
+  .trackingTimeline { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; gap: 18px; padding-bottom: 6px; }
+  .timelineStep { font-size: 9.5px; gap: 6px; min-width: 64px; text-align: center; }
+  .timelineStep i { width: 24px; height: 24px; font-size: 11px; }
+  .orderSummaryCard { padding: 22px 18px; }
+  .authCard { padding: 34px 22px; }
+  .adminTop { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .occasionGrid { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .occasionCard { padding: 16px 14px; }
+  .occasionNum { font-size: 20px !important; }
+  .heroCta { flex-direction: column; width: 100%; }
+  .heroCta .btn { width: 100%; justify-content: center; }
+  .newsletterForm { flex-direction: column; }
+  .successPage { padding: 40px 20px; margin: 40px auto; }
+  .emptyState { padding: 56px 16px; }
+}
