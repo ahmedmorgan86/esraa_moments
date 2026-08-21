@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    ESRAA MOMENTS — Premium Design System
    Ultra-minimal luxury e-commerce · Arabic RTL
    ========================================================================== */
@@ -3296,3 +3296,52 @@ html { scroll-behavior: smooth; }
 }
 @media (max-width: 640px) { .waFloat { bottom: 16px; inset-inline-end: 16px; width: 50px; height: 50px; } }
 .newsDone { display: inline-flex; align-items: center; gap: 8px; color: var(--success); font-weight: 700; padding: 14px 4px; }
+
+/* ── UX FIX LAYER v6 — footer 3-col, live preview, required fields ── */
+.footerGrid { grid-template-columns: 1.6fr 1fr 1.2fr; }
+@media (max-width: 1024px) { .footerGrid { grid-template-columns: 1fr 1fr; gap: 36px; } }
+@media (max-width: 640px) { .footerGrid { grid-template-columns: 1fr; gap: 32px; padding: 52px 0 36px; } }
+
+.previewOcc {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 2;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 999px; white-space: nowrap;
+  background: color-mix(in srgb, var(--pvDeep) 14%, transparent);
+  color: var(--pvDeep); font-size: 11.5px; font-weight: 800; letter-spacing: .04em;
+}
+.favorTags { margin-top: auto; margin-bottom: 46px; z-index: 1; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 0 14px; }
+.favorBox .favorMeta { margin-top: 0; margin-bottom: 0; }
+.favorQty {
+  display: inline-flex; align-items: center; padding: 7px 14px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 700; font-family: var(--font-latin);
+  background: var(--pvBg); color: var(--pvDeep); border: 1.5px solid var(--pvSoft);
+}
+@media (max-width: 900px) {
+  .studioPreviewCol { order: 1; position: static; }
+  .studioFormCol { order: 2; }
+}
+
+.typeCard small.typeDesc { font-size: 10.5px; line-height: 1.5; color: var(--muted); text-align: center; font-weight: 600; }
+.typeCard.on small.typeDesc { color: var(--accent); }
+
+.qtyField { display: flex; flex-direction: column; gap: 8px; }
+.qtyChips { display: flex; gap: 8px; flex-wrap: wrap; }
+.qtyChip {
+  padding: 6px 13px; border-radius: 999px; border: 1.5px solid var(--border);
+  background: var(--bg); font-size: 12px; font-weight: 700; color: var(--muted);
+  cursor: pointer; transition: all .2s ease; font-family: var(--font-latin);
+}
+.qtyChip:hover { border-color: var(--accent); color: var(--accent); }
+.qtyChip.on { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+
+.req { color: #c0392b; font-weight: 800; margin-inline-start: 3px; }
+.custError {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin-top: 18px; padding: 14px 16px; border-radius: var(--radius);
+  background: color-mix(in srgb, #c0392b 8%, transparent);
+  border: 1.5px solid color-mix(in srgb, #c0392b 35%, transparent);
+  color: #a93226; font-size: 13px;
+}
+.custError svg { flex-shrink: 0; margin-top: 2px; }
+.custError b { display: block; margin-bottom: 4px; }
+.custError ul { margin: 0; padding-inline-start: 18px; }

@@ -43,7 +43,7 @@ export function LoginPage({ t }: { t: typeof translations.ar }) {
           <motion.div className="authIcon" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}>
             <LogIn size={28} />
           </motion.div>
-          <span className="eyebrow">ACCOUNT</span>
+          <span className="eyebrow">{t.ebAccount}</span>
           <h1>{mode === 'login' ? t.loginTitle : t.signupTitle}</h1>
           <form onSubmit={submit}>
             <label>

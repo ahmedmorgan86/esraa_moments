@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Phone, Mail, MapPin, Gift, Edit3, CreditCard, DollarSign, Send, Check, ShoppingBag } from 'lucide-react';
+import { Phone, Mail, MapPin, Gift, Edit3, CreditCard, DollarSign, Send, Check, ShoppingBag, User } from 'lucide-react';
 import { AnimateScroll, pageVariants } from '../components/motion';
 import { supabase } from '../lib/supabase';
 import { occasions } from '../data';
@@ -135,11 +135,11 @@ export function CheckoutPage({ cart, setCart, cartTotal, t }: { cart: CartItem[]
   return (
     <motion.section className="section page" {...pageVariants}>
       <div className="sectionHead">
-        <AnimateScroll><div><span className="eyebrow">ORDER REQUEST</span><h2>{t.checkoutTitle}</h2></div></AnimateScroll>
+        <AnimateScroll><div><span className="eyebrow">{t.ebOrderReq}</span><h2>{t.checkoutTitle}</h2></div></AnimateScroll>
       </div>
       <form className="checkoutGrid" onSubmit={submit}>
         <div className="checkoutFields">
-          <AnimateScroll><label><span className="labelIcon"><Phone size={14} /></span> {t.fullName}<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label></AnimateScroll>
+          <AnimateScroll><label><span className="labelIcon"><User size={14} /></span> {t.fullName}<input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label></AnimateScroll>
           <AnimateScroll delay={.05}><label><span className="labelIcon"><Phone size={14} /></span> {t.phoneNum}<input type="tel" required pattern="01[0-9]{9}" title={uiLang === 'en' ? 'Egyptian mobile, e.g. 01012345678' : 'رقم موبايل مصري مثل 01012345678'} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} dir="ltr" /></label></AnimateScroll>
           <AnimateScroll delay={.1}><label><span className="labelIcon"><Mail size={14} /></span> {t.emailLabel}<input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></label></AnimateScroll>
           <AnimateScroll delay={.15}><label><span className="labelIcon"><MapPin size={14} /></span> {t.cityLabel}<select value={form.city} onChange={e => setForm({ ...form, city: e.target.value })}>{['القاهرة', 'الإسكندرية', 'الجيزة', 'المنصورة', 'أخرى'].map(c => <option key={c} value={c}>{pickLabel(c, cityEn)}</option>)}</select></label></AnimateScroll>

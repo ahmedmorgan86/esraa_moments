@@ -30,7 +30,7 @@ export function AdminPage({ t }: { t: typeof translations.ar }) {
   const [settings, setSettings] = useState({
     storeName: 'ESRAA Moments', storeDesc: 'تفاصيل صغيرة تصنع لحظات لا تُنسى',
     logoUrl: '/images/logo.jpeg', shippingFee: '25', freeShippingThreshold: '500',
-    whatsapp: '201097905455', email: 'info@esraamoments.com', phone: '01097905455',
+    whatsapp: '201097905455', email: 'esraamomentsstore@gmail.com', phone: '01097905455',
     instagram: 'https://www.instagram.com/esraamomentsstore', tiktok: 'https://www.tiktok.com/@esraamomentsstore'
   });
 
@@ -124,7 +124,7 @@ export function AdminPage({ t }: { t: typeof translations.ar }) {
           <motion.div className="authIcon" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}>
             <LayoutDashboard size={28} />
           </motion.div>
-          <span className="eyebrow">ADMIN</span>
+          <span className="eyebrow">{t.ebAdmin}</span>
           <h1>{t.admPanel}</h1>
           <p>{t.admProtected}</p>
           <Link className="btn primary full btnLg" to="/login"><LogIn size={18} /> {t.loginTitle}</Link>
@@ -331,9 +331,14 @@ function ProductsAdmin({ products, setProducts, t }: { products: Product[]; setP
     if (!form.name || !form.price) return;
     if (supabase) {
       const { data: cat } = await supabase.from('categories').select('id').eq('name', form.category).maybeSingle();
+      let catId = cat?.id ?? null;
+      if (!catId) {
+        const ins = await supabase.from('categories').insert({ name: form.category }).select('id').single();
+        if (!ins.error) catId = ins.data.id;
+      }
       const payload = {
         name: form.name, description: form.desc, price: Number(form.price), stock: Number(form.stock),
-        image_url: form.image || undefined, is_featured: form.featured, category_id: cat?.id ?? null
+        image_url: form.image || undefined, is_featured: form.featured, category_id: catId
       };
       if (editId) {
         const { error } = await supabase.from('products').update(payload).eq('id', editId);

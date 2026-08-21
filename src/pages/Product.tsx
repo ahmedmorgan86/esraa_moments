@@ -114,7 +114,7 @@ export function ProductPage({ products, addToCart, wish, setWish, t }: { product
       {related.length > 0 && (
         <section className="section">
           <div className="sectionHead">
-            <AnimateScroll><div><span className="eyebrow">RELATED</span><h2>{t.relatedTitle}</h2></div></AnimateScroll>
+            <AnimateScroll><div><span className="eyebrow">{t.ebRelated}</span><h2>{t.relatedTitle}</h2></div></AnimateScroll>
           </div>
           <StaggerContainer className="productGrid">
             {related.map(rp => (

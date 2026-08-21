@@ -99,7 +99,7 @@ export function Home({ products, addToCart, wish, setWish, t }: { products: Prod
       <section className="section">
         <div className="sectionHead">
           <AnimateScroll>
-            <div><span className="eyebrow">YOUR OCCASION</span><h2>{t.chooseOccasion}</h2></div>
+            <div><span className="eyebrow">{t.ebOccasion}</span><h2>{t.chooseOccasion}</h2></div>
           </AnimateScroll>
           <AnimateScroll delay={.1}>
             <p>{t.occasionsSub}</p>
@@ -123,7 +123,7 @@ export function Home({ products, addToCart, wish, setWish, t }: { products: Prod
       <section className="section" id="shop">
         <div className="sectionHead">
           <AnimateScroll>
-            <div><span className="eyebrow">CURATED COLLECTION</span><h2>{t.curated}</h2></div>
+            <div><span className="eyebrow">{t.ebCurated}</span><h2>{t.curated}</h2></div>
           </AnimateScroll>
           <AnimateScroll delay={.1}>
             <Link className="textLink" to="/shop">{t.allCollection} <ArrowLeft size={16} className="flip-x" /></Link>
@@ -174,7 +174,7 @@ export function Home({ products, addToCart, wish, setWish, t }: { products: Prod
       <section className="section" id="bestsellers">
         <div className="sectionHead">
           <AnimateScroll>
-            <div><span className="eyebrow">BEST SELLERS</span><h2>{t.bestSellers}</h2></div>
+            <div><span className="eyebrow">{t.ebBest}</span><h2>{t.bestSellers}</h2></div>
           </AnimateScroll>
           <AnimateScroll delay={.1}>
             <Link className="textLink" to="/shop">{t.viewAll} <ArrowLeft size={16} className="flip-x" /></Link>
@@ -206,7 +206,7 @@ export function Home({ products, addToCart, wish, setWish, t }: { products: Prod
       <section className="section newsletter">
         <AnimateScroll>
           <div className="newsletterInner">
-            <span className="eyebrow">STAY CONNECTED</span>
+            <span className="eyebrow">{t.ebStay}</span>
             <h2>{t.stayConnected}</h2>
             <p>{t.subscribeText}</p>
             <div className="newsletterForm">
@@ -228,7 +228,7 @@ export function Home({ products, addToCart, wish, setWish, t }: { products: Prod
       <section className="section faq" id="faq">
         <AnimateScroll>
           <div className="sectionHead center">
-            <div><span className="eyebrow">FAQ</span><h2>{t.faqTitle}</h2></div>
+            <div><span className="eyebrow">{t.ebFaq}</span><h2>{t.faqTitle}</h2></div>
           </div>
         </AnimateScroll>
         <StaggerContainer className="faqList">

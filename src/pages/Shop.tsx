@@ -16,6 +16,14 @@ export function ShopPage({ products, addToCart, wish, setWish, t }: { products: 
 
   useEffect(() => { setCat(new URLSearchParams(location.search).get('cat') || ''); }, [location.search]);
 
+  const cats = useMemo(() => {
+    const seen: string[] = [];
+    products.forEach(p => { if (p.category && !seen.includes(p.category)) seen.push(p.category); });
+    const ordered = occasions.filter(o => seen.includes(o));
+    const rest = seen.filter(c => !occasions.includes(c));
+    return [...ordered, ...rest];
+  }, [products]);
+
   const filtered = useMemo(() => {
     let items = products.filter(p => (!cat || p.category === cat) && (p.name + p.category + p.desc + (p.name_en || '') + (p.desc_en || '')).toLowerCase().includes(q.toLowerCase()));
     if (sort === 'priceLow') items = [...items].sort((a, b) => a.price - b.price);
@@ -27,7 +35,7 @@ export function ShopPage({ products, addToCart, wish, setWish, t }: { products: 
   return (
     <motion.section className="section page" {...pageVariants}>
       <div className="sectionHead">
-        <AnimateScroll><div><span className="eyebrow">SHOP</span><h2>{t.shopTitle}</h2></div></AnimateScroll>
+        <AnimateScroll><div><span className="eyebrow">{t.ebShop}</span><h2>{t.shopTitle}</h2></div></AnimateScroll>
       </div>
 
       <div className="shopToolbar">
@@ -50,7 +58,7 @@ export function ShopPage({ products, addToCart, wish, setWish, t }: { products: 
       <AnimateScroll>
         <div className="filterPills">
           <motion.button className={!cat ? 'pill active' : 'pill'} onClick={() => setCat('')} whileHover={{ scale: 1.05 }} whileTap={{ scale: .95 }}>{t.allPill}</motion.button>
-          {occasions.map(o => (
+          {cats.map(o => (
             <motion.button key={o} className={cat === o ? 'pill active' : 'pill'} onClick={() => setCat(o)} whileHover={{ scale: 1.05 }} whileTap={{ scale: .95 }}>
               {occLabel(o)}
             </motion.button>
