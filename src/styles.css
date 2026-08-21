@@ -3347,3 +3347,14 @@ html { scroll-behavior: smooth; }
   }
   .mobile-overlay.on { display: block; }
 }
+/* ── SIDE PADDING & OVERFLOW HARDENING v9 ── */
+.section { padding-inline: clamp(20px, 4vw, 48px); }
+.customPage .studioHero { margin-inline: calc(clamp(20px, 4vw, 48px) * -1); }
+
+.checkoutGrid > *, .productPageGrid > *, .studioBody > *, .footerGrid > *, .hero > * { min-width: 0; }
+
+p, li, h1, h2, h3, h4, label, .btn, .footerContactItem, .summaryRow b { overflow-wrap: break-word; }
+
+@media (max-width: 1024px) {
+  .trackingTimeline { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; gap: 18px; padding-bottom: 6px; }
+}
