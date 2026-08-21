@@ -3052,3 +3052,63 @@ html { scroll-behavior: smooth; }
 
 /* English mode: latin font for headings */
 [lang="en"] h1, [lang="en"] h2, [lang="en"] h3, html[lang="en"] body { font-family: var(--font-latin), var(--font); }
+
+/* ════════════════════════════════════════════════════════════
+   CUSTOMIZER FIX + POLISH — mobile collapse & premium look
+   ════════════════════════════════════════════════════════════ */
+
+/* Progress bar: gradient fill + glow on active step */
+.progressFill { background: linear-gradient(90deg, var(--accent), var(--rose)); box-shadow: 0 0 8px var(--accent-glow); border-radius: 999px; }
+.progressStep.active i { box-shadow: 0 0 0 5px var(--accent-glow); }
+[dir="rtl"] .progressFill { background: linear-gradient(270deg, var(--accent), var(--rose)); }
+
+/* Preview card: luxury stationery look */
+.previewCard {
+  background:
+    radial-gradient(120% 100% at 50% 0%, var(--accent-light) 0%, var(--bg) 55%);
+  position: relative;
+}
+.previewCard::before, .previewCard::after {
+  content: ''; position: absolute; width: 44px; height: 44px; pointer-events: none;
+  border-color: var(--accent); border-style: solid; opacity: .55;
+}
+.previewCard::before { top: 10px; inset-inline-start: 10px; border-width: 2px 0 0 2px; border-start-start-radius: 10px; }
+.previewCard::after { bottom: 10px; inset-inline-end: 10px; border-width: 0 2px 2px 0; border-end-end-radius: 10px; }
+.previewCard b { font-size: clamp(22px, 4vw, 30px); font-weight: 800; color: var(--ink); }
+.previewCard small { font-family: var(--font-latin); letter-spacing: .08em; }
+
+/* Choice buttons: refined selected state */
+.choiceBtn.selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.choiceBtn:hover:not(.selected) { border-color: var(--accent); background: var(--accent-light); }
+
+/* Summary rows: divider rhythm */
+.summaryRow { padding-bottom: 12px; border-bottom: 1px dashed var(--border); }
+.summaryRow:last-child { border-bottom: none; padding-bottom: 0; }
+
+/* ── Mobile collapse (the critical fix) ── */
+@media (max-width: 900px) {
+  .customBody { grid-template-columns: 1fr; gap: 28px; max-width: 640px; }
+  .customPreview { position: static; min-height: 0; padding: 32px 24px; order: 2; }
+  .customForm { padding: 32px 24px; order: 1; }
+  .stepContent { min-height: 0; }
+  .customHeader { margin-bottom: 40px; }
+}
+@media (max-width: 640px) {
+  .customPage { padding-top: 104px; padding-bottom: 56px; }
+  .progressBar { max-width: 100%; gap: 4px; }
+  .progressStep { font-size: 9.5px; gap: 6px; }
+  .progressStep i { width: 24px; height: 24px; font-size: 11px; }
+  .progressLine { top: 12px; }
+  .choiceGrid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .choiceBtn { padding: 14px 10px; font-size: 13.5px; }
+  .formGrid { grid-template-columns: 1fr; gap: 14px; }
+  .customForm { padding: 26px 18px; border-radius: var(--radius-lg); }
+  .previewCard { padding: 36px 20px; }
+  .stepNav { flex-direction: row; gap: 10px; }
+  .stepNav .btn { flex: 1; justify-content: center; }
+}
+
+/* Desktop: form slightly narrower than preview for hierarchy */
+@media (min-width: 901px) {
+  .customBody { grid-template-columns: 0.9fr 1.1fr; }
+}
